@@ -1,0 +1,24 @@
+# Built frontend. Produced by `npm run build` and packaged into the release
+# tarball by CI, so it does not belong in the history.
+/js/
+/css/
+
+# Dependencies
+/node_modules/
+/vendor/
+
+# Packaging output
+/build/
+*.tar.gz
+
+# Signing material. The private key must never reach the repository.
+*.key
+*.crt
+!appinfo/signature.json
+
+# Local tooling
+.php-cs-fixer.cache
+.phpunit.result.cache
+/.idea/
+/.vscode/
+*.log

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<psalm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="https://getpsalm.org/schema/config"
+       xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+       errorLevel="4"
+       findUnusedBaselineEntry="true"
+       findUnusedCode="false">
+	<projectFiles>
+		<directory name="lib"/>
+		<ignoreFiles>
+			<directory name="vendor"/>
+		</ignoreFiles>
+	</projectFiles>
+	<extraFiles>
+		<directory name="vendor"/>
+	</extraFiles>
+	<issueHandlers>
+		<!--
+			Analysis runs against `nextcloud/ocp`, which ships the public API only.
+			Parts of it are typed against private core classes that the package does
+			not contain, so psalm reports a missing dependency for code that is
+			perfectly valid on a real server.
+		-->
+		<MissingDependency errorLevel="suppress"/>
+
+		<!--
+			MediaFinder and TrashService reach into OC\ and OCA\Files_Trashbin on
+			purpose — there is no public way to build a paged search query or restore
+			a trashed file — and both degrade gracefully when those are absent.
+		-->
+		<UndefinedClass>
+			<errorLevel type="suppress">
+				<referencedClass name="OC\Files\Search\SearchQuery"/>
+				<referencedClass name="OC\Files\Search\SearchComparison"/>
+				<referencedClass name="OC\Files\Search\SearchBinaryOperator"/>
+				<referencedClass name="OC\Files\Search\SearchOrder"/>
+			</errorLevel>
+		</UndefinedClass>
+	</issueHandlers>
+</psalm>

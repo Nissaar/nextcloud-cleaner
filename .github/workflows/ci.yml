@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor is what info.xml declares; the ceiling is what current
+        # Nextcloud releases actually run on.
+        php: ['8.1', '8.4']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Lint every source file
+        run: find lib appinfo tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Coding standard
+        run: composer run cs:check
+
+      - name: Static analysis
+        run: composer run psalm
+
+      - name: Unit tests
+        run: composer run test:unit
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Fail if the build produced nothing
+        run: test -s js/photocleaner-main.js
+
+  appinfo:
+    name: App metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the app store schema
+        run: curl -sSfL https://apps.nextcloud.com/schema/apps/info.xsd -o /tmp/info.xsd
+
+      # A malformed info.xml is only discovered when the app store rejects the
+      # upload, which is the worst moment to find out.
+      - name: Validate info.xml
+        run: xmllint --noout --schema /tmp/info.xsd appinfo/info.xml

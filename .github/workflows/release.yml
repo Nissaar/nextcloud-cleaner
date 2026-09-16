@@ -1,0 +1,108 @@
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, sign and publish
+    runs-on: ubuntu-latest
+
+    # Declared here rather than per step: a step's `if:` is evaluated before its own
+    # `env:` exists, so a step-level definition would make every guard below false.
+    env:
+      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+      APP_CERTIFICATE: ${{ secrets.APP_CERTIFICATE }}
+      APP_STORE_TOKEN: ${{ secrets.APP_STORE_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches info.xml
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          declared=$(sed -ne 's|^\s*<version>\(.*\)</version>|\1|p' appinfo/info.xml)
+          if [ "$tag" != "$declared" ]; then
+            echo "Tag $tag does not match <version>$declared</version> in appinfo/info.xml" >&2
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Build the frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble the package
+        run: make package
+
+      # Signing needs `occ`, which needs a Nextcloud install. The official image
+      # is the least surprising place to get one.
+      - name: Write the signing key
+        if: ${{ env.APP_PRIVATE_KEY != '' }}
+        run: |
+          mkdir -p "$HOME/.nextcloud/certificates"
+          printf '%s' "$APP_PRIVATE_KEY" > "$HOME/.nextcloud/certificates/photocleaner.key"
+          printf '%s' "$APP_CERTIFICATE" > "$HOME/.nextcloud/certificates/photocleaner.crt"
+          chmod 600 "$HOME/.nextcloud/certificates/photocleaner.key"
+
+      - name: Sign the package
+        if: ${{ env.APP_PRIVATE_KEY != '' }}
+        run: |
+          docker run --rm \
+            -v "$PWD/build:/build" \
+            -v "$HOME/.nextcloud/certificates:/certs:ro" \
+            --entrypoint php \
+            nextcloud:stable \
+            /var/www/html/occ integrity:sign-app \
+              --privateKey=/certs/photocleaner.key \
+              --certificate=/certs/photocleaner.crt \
+              --path=/build/photocleaner
+
+      - name: Warn when the release is unsigned
+        if: ${{ env.APP_PRIVATE_KEY == '' }}
+        run: echo "::warning::No APP_PRIVATE_KEY secret — publishing an unsigned build. The app store will refuse it."
+
+      - name: Make the tarball
+        run: make tarball
+
+      - name: Sign the tarball for the app store API
+        if: ${{ env.APP_PRIVATE_KEY != '' }}
+        run: |
+          openssl dgst -sha512 -sign "$HOME/.nextcloud/certificates/photocleaner.key" \
+            build/artifacts/photocleaner-*.tar.gz | openssl base64 -A > build/artifacts/signature.txt
+
+      - name: Attach everything to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/artifacts/*.tar.gz
+            build/artifacts/*.sha512
+          generate_release_notes: true
+
+      # The app store pulls the tarball from the release it was just attached to,
+      # so this has to come after the upload.
+      - name: Publish to the Nextcloud app store
+        if: ${{ env.APP_STORE_TOKEN != '' && env.APP_PRIVATE_KEY != '' }}
+        run: |
+          tarball=$(basename build/artifacts/photocleaner-*.tar.gz)
+          download="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${tarball}"
+          curl -sSf -X POST https://apps.nextcloud.com/api/v1/apps/releases \
+            -H "Authorization: Token ${APP_STORE_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "$(jq -n \
+                  --arg download "$download" \
+                  --arg signature "$(cat build/artifacts/signature.txt)" \
+                  '{download: $download, signature: $signature, nightly: false}')"
