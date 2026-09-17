@@ -122,7 +122,7 @@ class IndexService {
 		try {
 			$this->runScan($userId, $scan, $onProgress, $maxBatches ?? self::MAX_BATCHES_PER_RUN);
 		} catch (\Throwable $e) {
-			$this->logger->error('Photo Cleaner index scan failed', [
+			$this->logger->error('Nextcloud Cleaner index scan failed', [
 				'exception' => $e,
 				'userId' => $userId,
 				'app' => 'nextcloud_cleaner',

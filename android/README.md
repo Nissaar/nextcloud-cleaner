@@ -1,6 +1,6 @@
-# Photo Cleaner for Android
+# Nextcloud Cleaner for Android
 
-The phone client for the [Photo Cleaner Nextcloud app](../README.md). It talks to the
+The phone client for the [Nextcloud Cleaner Nextcloud app](../README.md). It talks to the
 same OCS API the web UI uses, so verdicts given here show up there and the other way
 round.
 
@@ -105,7 +105,7 @@ so forks work without configuration.
 ## Layout
 
 ```
-app/src/main/java/xyz/photocleaner/nextcloud/
+app/src/main/java/xyz/nextcloudcleaner/
 ├── api/          Login Flow v2, the OCS client, and the wire models
 ├── data/         account store, offline verdict queue, repository
 ├── ui/           Compose screens

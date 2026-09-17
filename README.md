@@ -1,4 +1,4 @@
-# Photo Cleaner for Nextcloud
+# Nextcloud Cleaner
 
 Go through your Nextcloud photo library one photo at a time, month by month, keeping
 or deleting each one. Deletions are real — they go to the Nextcloud trash, not just
@@ -45,7 +45,7 @@ rather than letting you find out afterwards.
 ## Where "date taken" comes from
 
 This is the whole premise of a month-by-month review, and Nextcloud does not store it
-as a first-class field. Photo Cleaner walks a chain, best evidence first, and records
+as a first-class field. Nextcloud Cleaner walks a chain, best evidence first, and records
 which link answered so an odd-looking month is explainable rather than mysterious:
 
 | Order | Source | When it applies |
@@ -80,7 +80,7 @@ which the app tells you per photo.
 
 ## Installing
 
-From the Nextcloud app store: **Apps → Multimedia → Photo Cleaner → Download and
+From the Nextcloud app store: **Apps → Multimedia → Nextcloud Cleaner → Download and
 enable**.
 
 By hand:

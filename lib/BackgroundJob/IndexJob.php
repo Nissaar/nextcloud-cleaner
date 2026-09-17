@@ -53,7 +53,7 @@ class IndexJob extends TimedJob {
 				$this->indexService->scan($scan->getUserId());
 			} catch (\Throwable $e) {
 				// One broken account must not stop the others being indexed.
-				$this->logger->error('Photo Cleaner background index failed', [
+				$this->logger->error('Nextcloud Cleaner background index failed', [
 					'exception' => $e,
 					'userId' => $scan->getUserId(),
 					'app' => 'nextcloud_cleaner',

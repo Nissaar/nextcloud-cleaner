@@ -36,7 +36,7 @@ class IndexCommand extends Command {
 	protected function configure(): void {
 		$this
 			->setName('nextcloud_cleaner:index')
-			->setDescription('Build or refresh the Photo Cleaner month index for a user')
+			->setDescription('Build or refresh the Nextcloud Cleaner month index for a user')
 			->addArgument('user', InputArgument::REQUIRED, 'The user whose library to index')
 			->addOption('full', null, InputOption::VALUE_NONE, 'Discard the existing index and read everything again')
 			->addOption(

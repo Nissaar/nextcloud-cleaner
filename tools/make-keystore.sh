@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Generates the release signing key for Photo Cleaner.
+# Generates the release signing key for Nextcloud Cleaner.
 #
 # Run this ONCE. The resulting keystore is the app's permanent identity: Android
 # only accepts an update if it is signed by the same key as the installed version.

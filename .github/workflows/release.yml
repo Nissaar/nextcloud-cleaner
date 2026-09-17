@@ -162,7 +162,7 @@ jobs:
 
             Most people should install from the
             [Nextcloud app store](https://apps.nextcloud.com/apps/nextcloud_cleaner):
-            **Apps → Multimedia → Photo Cleaner → Download and enable**.
+            **Apps → Multimedia → Nextcloud Cleaner → Download and enable**.
 
             To install this tarball by hand, unpack it into your server's apps
             directory — the folder must be named `nextcloud_cleaner` — and enable it:

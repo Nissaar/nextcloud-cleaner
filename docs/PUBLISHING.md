@@ -13,7 +13,7 @@ Three names are in play and only one of them is permanent:
 | Name | Value | Changeable? |
 |---|---|---|
 | **App id** | `nextcloud_cleaner` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
-| Display name | Photo Cleaner | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
+| Display name | Nextcloud Cleaner | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
 | Repository | `nextcloud-cleaner` | Yes. GitHub only; Nextcloud never sees it. |
 
 The app store's schema restricts an id to `[a-z]+[a-z0-9_]*[a-z0-9]+` — lowercase
