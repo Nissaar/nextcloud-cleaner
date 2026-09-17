@@ -36,17 +36,8 @@ for Google Play and the App Store, "you can **NOT** use the term 'Nextcloud' in 
 name of your app".
 
 What *is* allowed is describing compatibility: "for Nextcloud", "compatible with
-Nextcloud". That is why the summary and this README say it freely while the name does
-not. The same applies to the Android client's label and package id.
-
----|---|---|
-| **App id** | `photosweep` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
-| Display name | Photo Sweep | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
-| Repository | `nextcloud-cleaner` | Yes. GitHub only; Nextcloud never sees it. |
-
-The app store's schema restricts an id to `[a-z]+[a-z0-9_]*[a-z0-9]+` — lowercase
-letters, digits and underscores, 32 characters at most. A hyphen is not allowed, which
-is why the id is not simply the repository name.
+Nextcloud". That is why the summary, the README and this document say it freely while
+the name does not. The same applies to the Android client's label and package id.
 
 ---
 
