@@ -280,6 +280,41 @@ class IndexService {
 		return $userFolder;
 	}
 
+	/**
+	 * Indexes a specific set of files, adding them back to the library.
+	 *
+	 * Applying a verdict takes a file out of the index because it has left the
+	 * library; restoring one has to put it back, or the photo would sit on disk
+	 * invisible to the month grid until somebody happened to run a full rebuild.
+	 *
+	 * @param int[] $fileIds
+	 * @return int how many were indexed
+	 */
+	public function indexFiles(string $userId, array $fileIds): int {
+		if ($fileIds === []) {
+			return 0;
+		}
+
+		$userFolder = $this->rootFolder->getUserFolder($userId);
+		$timezone = $this->configService->getTimeZone($userId);
+		$excludedPrefix = rtrim($this->configService->getTargetFolder($userId), '/') . '/';
+
+		$files = [];
+		foreach ($fileIds as $fileId) {
+			$node = null;
+			if (method_exists($userFolder, 'getFirstNodeById')) {
+				$node = $userFolder->getFirstNodeById($fileId);
+			} else {
+				$node = $userFolder->getById($fileId)[0] ?? null;
+			}
+			if ($node instanceof File) {
+				$files[] = $node;
+			}
+		}
+
+		return $this->indexBatch($userId, $userFolder, $files, $timezone, $excludedPrefix);
+	}
+
 	/** Drops one file out of the index, for when it leaves the library. */
 	public function forget(string $userId, int $fileId): void {
 		$this->mediaMapper->removeByFileId($userId, $fileId);

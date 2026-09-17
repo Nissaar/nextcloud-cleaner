@@ -36,6 +36,7 @@ class CleanupService {
 		private MediaMapper $mediaMapper,
 		private ConfigService $configService,
 		private TrashService $trashService,
+		private IndexService $indexService,
 		private LoggerInterface $logger,
 	) {
 	}
@@ -183,6 +184,19 @@ class CleanupService {
 
 		if ($restoredIds !== []) {
 			$this->decisionMapper->removeByFileIds($userId, $restoredIds);
+			// Back in the library, so back in the index. Applying removed these rows
+			// because the files had left; without this the photo would be on disk but
+			// absent from every month, and could not even be marked again.
+			try {
+				$this->indexService->indexFiles($userId, $restoredIds);
+			} catch (\Throwable $e) {
+				// The files are restored either way, which is the part that matters.
+				// A stale index is corrected by the next scan.
+				$this->logger->warning('Restored files could not be re-indexed', [
+					'exception' => $e,
+					'app' => 'photocleaner',
+				]);
+			}
 		}
 
 		return ['restored' => count($restoredIds), 'failures' => ApplyResult::failuresFrom($failures)];
