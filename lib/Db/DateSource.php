@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Db;
+namespace OCA\PhotoSweep\Db;
 
 /**
  * Where a media item's capture date came from, best first.

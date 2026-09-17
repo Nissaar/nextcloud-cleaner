@@ -88,7 +88,7 @@ jobs:
           npm ci
           npm run lint
           npm run build
-          test -s js/nextcloud_cleaner-main.js
+          test -s js/photosweep-main.js
 
       - name: Assemble the package
         run: make package
@@ -103,9 +103,9 @@ jobs:
           APP_CERTIFICATE: ${{ secrets.APP_CERTIFICATE }}
         run: |
           mkdir -p "$RUNNER_TEMP/certs"
-          printf '%s' "$APP_PRIVATE_KEY" > "$RUNNER_TEMP/certs/nextcloud_cleaner.key"
-          printf '%s' "$APP_CERTIFICATE" > "$RUNNER_TEMP/certs/nextcloud_cleaner.crt"
-          chmod 600 "$RUNNER_TEMP/certs/nextcloud_cleaner.key"
+          printf '%s' "$APP_PRIVATE_KEY" > "$RUNNER_TEMP/certs/photosweep.key"
+          printf '%s' "$APP_CERTIFICATE" > "$RUNNER_TEMP/certs/photosweep.crt"
+          chmod 600 "$RUNNER_TEMP/certs/photosweep.key"
           echo "present=true" >> "$GITHUB_OUTPUT"
 
       # `integrity:sign-app` writes appinfo/signature.json, which is what a server
@@ -120,11 +120,11 @@ jobs:
             --entrypoint php \
             nextcloud:stable \
             /var/www/html/occ integrity:sign-app \
-              --privateKey=/certs/nextcloud_cleaner.key \
-              --certificate=/certs/nextcloud_cleaner.crt \
-              --path=/build/nextcloud_cleaner
-          test -s build/nextcloud_cleaner/appinfo/signature.json
-          echo "Signed $(python3 -c "import json;print(len(json.load(open('build/nextcloud_cleaner/appinfo/signature.json'))['hashes']))") files."
+              --privateKey=/certs/photosweep.key \
+              --certificate=/certs/photosweep.crt \
+              --path=/build/photosweep
+          test -s build/photosweep/appinfo/signature.json
+          echo "Signed $(python3 -c "import json;print(len(json.load(open('build/photosweep/appinfo/signature.json'))['hashes']))") files."
 
       - name: Warn that the build is unsigned
         if: steps.signing.outputs.present != 'true'
@@ -136,7 +136,7 @@ jobs:
       - name: Checksums
         run: |
           cd build/artifacts
-          sha256sum nextcloud_cleaner-*.tar.gz | tee -a SHA256SUMS.txt
+          sha256sum photosweep-*.tar.gz | tee -a SHA256SUMS.txt
 
       # The store verifies this against the registered certificate before it will
       # accept the download URL.
@@ -144,8 +144,8 @@ jobs:
         if: steps.signing.outputs.present == 'true'
         run: |
           set -euo pipefail
-          openssl dgst -sha512 -sign "$RUNNER_TEMP/certs/nextcloud_cleaner.key" \
-            build/artifacts/nextcloud_cleaner-${{ steps.version.outputs.number }}.tar.gz \
+          openssl dgst -sha512 -sign "$RUNNER_TEMP/certs/photosweep.key" \
+            build/artifacts/photosweep-${{ steps.version.outputs.number }}.tar.gz \
             | openssl base64 -A > "$RUNNER_TEMP/signature.txt"
 
       - name: Publish release
@@ -154,23 +154,23 @@ jobs:
           # Required for workflow_dispatch, where the run is not tag-triggered.
           tag_name: ${{ steps.version.outputs.tag }}
           files: |
-            build/artifacts/nextcloud_cleaner-*.tar.gz
+            build/artifacts/photosweep-*.tar.gz
             build/artifacts/SHA256SUMS.txt
           generate_release_notes: true
           body: |
             ## Install
 
             Most people should install from the
-            [Nextcloud app store](https://apps.nextcloud.com/apps/nextcloud_cleaner):
-            **Apps → Multimedia → Nextcloud Cleaner → Download and enable**.
+            [Nextcloud app store](https://apps.nextcloud.com/apps/photosweep):
+            **Apps → Multimedia → Photo Sweep → Download and enable**.
 
             To install this tarball by hand, unpack it into your server's apps
-            directory — the folder must be named `nextcloud_cleaner` — and enable it:
+            directory — the folder must be named `photosweep` — and enable it:
 
             ```bash
-            tar -xzf nextcloud_cleaner-*.tar.gz -C /path/to/nextcloud/custom_apps/
-            sudo -u www-data php occ app:enable nextcloud_cleaner
-            sudo -u www-data php occ nextcloud_cleaner:index <user> --until-complete
+            tar -xzf photosweep-*.tar.gz -C /path/to/nextcloud/custom_apps/
+            sudo -u www-data php occ app:enable photosweep
+            sudo -u www-data php occ photosweep:index <user> --until-complete
             ```
 
             Verify the download against `SHA256SUMS.txt` first.
@@ -191,7 +191,7 @@ jobs:
         if: steps.signing.outputs.present == 'true' && env.APP_STORE_TOKEN != ''
         run: |
           set -euo pipefail
-          TARBALL="nextcloud_cleaner-${{ steps.version.outputs.number }}.tar.gz"
+          TARBALL="photosweep-${{ steps.version.outputs.number }}.tar.gz"
           DOWNLOAD="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ steps.version.outputs.tag }}/${TARBALL}"
 
           curl -sSf -X POST https://apps.nextcloud.com/api/v1/apps/releases \

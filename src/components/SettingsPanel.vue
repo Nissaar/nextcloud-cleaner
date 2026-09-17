@@ -5,10 +5,10 @@
 
 <template>
 	<div class="pc-settings">
-		<h2>{{ t('nextcloud_cleaner', 'Settings') }}</h2>
+		<h2>{{ t('photosweep', 'Settings') }}</h2>
 
 		<section class="pc-settings__section">
-			<h3>{{ t('nextcloud_cleaner', 'What happens when you confirm a deletion') }}</h3>
+			<h3>{{ t('photosweep', 'What happens when you confirm a deletion') }}</h3>
 
 			<NcCheckboxRadioSwitch
 				:modelValue="local.mode"
@@ -16,12 +16,12 @@
 				name="pc-mode"
 				type="radio"
 				@update:modelValue="set('mode', $event)">
-				{{ t('nextcloud_cleaner', 'Move to the Nextcloud trash') }}
+				{{ t('photosweep', 'Move to the Nextcloud trash') }}
 			</NcCheckboxRadioSwitch>
 			<p class="pc-settings__hint">
 				{{ trashAvailable
-					? t('nextcloud_cleaner', 'A real deletion. The files leave your library and your server’s retention policy decides how long they stay recoverable.')
-					: t('nextcloud_cleaner', 'The trash app is disabled on this server, so this option deletes permanently and cannot be undone.') }}
+					? t('photosweep', 'A real deletion. The files leave your library and your server’s retention policy decides how long they stay recoverable.')
+					: t('photosweep', 'The trash app is disabled on this server, so this option deletes permanently and cannot be undone.') }}
 			</p>
 
 			<NcCheckboxRadioSwitch
@@ -30,47 +30,47 @@
 				name="pc-mode"
 				type="radio"
 				@update:modelValue="set('mode', $event)">
-				{{ t('nextcloud_cleaner', 'Collect them in a folder') }}
+				{{ t('photosweep', 'Collect them in a folder') }}
 			</NcCheckboxRadioSwitch>
 			<p class="pc-settings__hint">
-				{{ t('nextcloud_cleaner', 'Deletes nothing. The files are moved together so you can look through them in Files and delete them yourself.') }}
+				{{ t('photosweep', 'Deletes nothing. The files are moved together so you can look through them in Files and delete them yourself.') }}
 			</p>
 
 			<NcTextField
 				v-if="local.mode === 'folder'"
 				:modelValue="local.targetFolder"
-				:label="t('nextcloud_cleaner', 'Collection folder')"
-				:helperText="t('nextcloud_cleaner', 'Created if it does not exist. It is left out of the index, so collected photos will not come back around for review.')"
+				:label="t('photosweep', 'Collection folder')"
+				:helperText="t('photosweep', 'Created if it does not exist. It is left out of the index, so collected photos will not come back around for review.')"
 				@update:modelValue="set('targetFolder', $event)" />
 		</section>
 
 		<section class="pc-settings__section">
-			<h3>{{ t('nextcloud_cleaner', 'What gets indexed') }}</h3>
+			<h3>{{ t('photosweep', 'What gets indexed') }}</h3>
 
 			<NcTextField
 				:modelValue="local.sourceFolder"
-				:label="t('nextcloud_cleaner', 'Folder to go through')"
-				:helperText="t('nextcloud_cleaner', 'Use / for everything, or narrow it to something like /Photos. Changing this needs a rebuild to take effect.')"
+				:label="t('photosweep', 'Folder to go through')"
+				:helperText="t('photosweep', 'Use / for everything, or narrow it to something like /Photos. Changing this needs a rebuild to take effect.')"
 				@update:modelValue="set('sourceFolder', $event)" />
 
 			<NcCheckboxRadioSwitch
 				:modelValue="local.skipDecided"
 				type="switch"
 				@update:modelValue="set('skipDecided', $event)">
-				{{ t('nextcloud_cleaner', 'Hide photos you have already judged') }}
+				{{ t('photosweep', 'Hide photos you have already judged') }}
 			</NcCheckboxRadioSwitch>
 			<p class="pc-settings__hint">
-				{{ t('nextcloud_cleaner', 'On by default, so reopening a month picks up where you left off instead of starting over.') }}
+				{{ t('photosweep', 'On by default, so reopening a month picks up where you left off instead of starting over.') }}
 			</p>
 		</section>
 
 		<section class="pc-settings__section">
-			<h3>{{ t('nextcloud_cleaner', 'Index') }}</h3>
+			<h3>{{ t('photosweep', 'Index') }}</h3>
 			<p class="pc-settings__hint">
-				{{ t('nextcloud_cleaner', 'Rebuilding reads every photo again and works out its date from scratch. Your verdicts are kept.') }}
+				{{ t('photosweep', 'Rebuilding reads every photo again and works out its date from scratch. Your verdicts are kept.') }}
 			</p>
 			<NcButton @click="$emit('rebuild')">
-				{{ t('nextcloud_cleaner', 'Rebuild index') }}
+				{{ t('photosweep', 'Rebuild index') }}
 			</NcButton>
 		</section>
 	</div>

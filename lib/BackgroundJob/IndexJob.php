@@ -7,10 +7,10 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\BackgroundJob;
+namespace OCA\PhotoSweep\BackgroundJob;
 
-use OCA\NextcloudCleaner\Db\ScanMapper;
-use OCA\NextcloudCleaner\Service\IndexService;
+use OCA\PhotoSweep\Db\ScanMapper;
+use OCA\PhotoSweep\Service\IndexService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -53,10 +53,10 @@ class IndexJob extends TimedJob {
 				$this->indexService->scan($scan->getUserId());
 			} catch (\Throwable $e) {
 				// One broken account must not stop the others being indexed.
-				$this->logger->error('Nextcloud Cleaner background index failed', [
+				$this->logger->error('Photo Sweep background index failed', [
 					'exception' => $e,
 					'userId' => $scan->getUserId(),
-					'app' => 'nextcloud_cleaner',
+					'app' => 'photosweep',
 				]);
 			}
 		}

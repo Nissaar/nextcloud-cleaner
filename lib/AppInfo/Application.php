@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\AppInfo;
+namespace OCA\PhotoSweep\AppInfo;
 
-use OCA\NextcloudCleaner\Listener\FileEventListener;
+use OCA\PhotoSweep\Listener\FileEventListener;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -17,7 +17,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Files\Events\Node\NodeDeletedEvent;
 
 class Application extends App implements IBootstrap {
-	public const APP_ID = 'nextcloud_cleaner';
+	public const APP_ID = 'photosweep';
 
 	public function __construct(array $params = []) {
 		parent::__construct(self::APP_ID, $params);

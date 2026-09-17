@@ -12,8 +12,36 @@ Three names are in play and only one of them is permanent:
 
 | Name | Value | Changeable? |
 |---|---|---|
-| **App id** | `nextcloud_cleaner` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
-| Display name | Nextcloud Cleaner | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
+| **App id** | `photosweep` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
+| Display name | Photo Sweep | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
+| Repository | `nextcloud-cleaner` | Yes. GitHub only; Nextcloud never sees it. |
+
+The id is restricted to `[a-z]+[a-z0-9_]*[a-z0-9]+` — lowercase letters, digits and
+underscores, 32 characters at most. No hyphens, so a repository name with one in it
+cannot be used as an id.
+
+### Do not put "Nextcloud" in the name
+
+This is a hard rule, not a preference. The
+[app store rules](https://docs.nextcloud.com/server/stable/developer_manual/app_publishing_maintenance/publishing.html)
+say plainly:
+
+> Apps must not use 'Nextcloud' in their name.
+
+and breaking the guidelines means an app "might be blocked from the app store
+altogether". The
+[trademark guidelines](https://nextcloud.com/trademarks/) go further — "you should not
+include a Nextcloud mark in the name of your application, product or service" — and
+for Google Play and the App Store, "you can **NOT** use the term 'Nextcloud' in the
+name of your app".
+
+What *is* allowed is describing compatibility: "for Nextcloud", "compatible with
+Nextcloud". That is why the summary and this README say it freely while the name does
+not. The same applies to the Android client's label and package id.
+
+---|---|---|
+| **App id** | `photosweep` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
+| Display name | Photo Sweep | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
 | Repository | `nextcloud-cleaner` | Yes. GitHub only; Nextcloud never sees it. |
 
 The app store's schema restricts an id to `[a-z]+[a-z0-9_]*[a-z0-9]+` — lowercase
@@ -30,11 +58,11 @@ Nextcloud to revoke the old certificate and issue a new one, which takes another
 request and leaves every existing install unable to verify the app in the meantime.
 
 ```bash
-openssl req -nodes -newkey rsa:4096 -keyout nextcloud_cleaner.key -out nextcloud_cleaner.csr \
-        -subj "/CN=nextcloud_cleaner"
+openssl req -nodes -newkey rsa:4096 -keyout photosweep.key -out photosweep.csr \
+        -subj "/CN=photosweep"
 ```
 
-The `CN` **must** be exactly the app id, `nextcloud_cleaner`. The store checks this.
+The `CN` **must** be exactly the app id, `photosweep`. The store checks this.
 
 ### Back it up before doing anything else
 
@@ -49,9 +77,9 @@ The `CN` **must** be exactly the app id, `nextcloud_cleaner`. The store checks t
 
 Open a pull request against
 [nextcloud/app-certificate-requests](https://github.com/nextcloud/app-certificate-requests)
-adding `nextcloud_cleaner/nextcloud_cleaner.csr`, with a link to this repository in the
+adding `photosweep/photosweep.csr`, with a link to this repository in the
 description. A Nextcloud maintainer reviews it and commits the signed
-`nextcloud_cleaner.crt` back to that repository.
+`photosweep.crt` back to that repository.
 
 This takes days rather than minutes. Start it before you plan to release.
 
@@ -59,16 +87,16 @@ Once merged:
 
 ```bash
 mkdir -p ~/.nextcloud/certificates
-mv nextcloud_cleaner.key ~/.nextcloud/certificates/
-curl -sSfL https://raw.githubusercontent.com/nextcloud/app-certificate-requests/master/nextcloud_cleaner/nextcloud_cleaner.crt \
-     -o ~/.nextcloud/certificates/nextcloud_cleaner.crt
-chmod 600 ~/.nextcloud/certificates/nextcloud_cleaner.key
+mv photosweep.key ~/.nextcloud/certificates/
+curl -sSfL https://raw.githubusercontent.com/nextcloud/app-certificate-requests/master/photosweep/photosweep.crt \
+     -o ~/.nextcloud/certificates/photosweep.crt
+chmod 600 ~/.nextcloud/certificates/photosweep.key
 ```
 
 ## 3. Register the app id
 
 Sign in at [apps.nextcloud.com](https://apps.nextcloud.com) with a Nextcloud account,
-then register `nextcloud_cleaner` under **Developer → Register app**. The id has to match
+then register `photosweep` under **Developer → Register app**. The id has to match
 the certificate's `CN` and `appinfo/info.xml`'s `<id>`.
 
 Take an API token from your account settings — the release workflow uses it.
@@ -79,8 +107,8 @@ Under **Settings → Secrets and variables → Actions**:
 
 | Secret | Value |
 |---|---|
-| `APP_PRIVATE_KEY` | contents of `nextcloud_cleaner.key` |
-| `APP_CERTIFICATE` | contents of `nextcloud_cleaner.crt` |
+| `APP_PRIVATE_KEY` | contents of `photosweep.key` |
+| `APP_CERTIFICATE` | contents of `photosweep.crt` |
 | `APP_STORE_TOKEN` | your app store API token |
 
 Without them the release workflow still runs, and publishes an **unsigned** tarball
@@ -104,8 +132,8 @@ release, and posts the download URL and a detached signature to the app store AP
 
 ```bash
 make appstore NEXTCLOUD_ROOT=/path/to/nextcloud
-openssl dgst -sha512 -sign ~/.nextcloud/certificates/nextcloud_cleaner.key \
-        build/artifacts/nextcloud_cleaner-1.0.1.tar.gz | openssl base64 -A
+openssl dgst -sha512 -sign ~/.nextcloud/certificates/photosweep.key \
+        build/artifacts/photosweep-1.0.1.tar.gz | openssl base64 -A
 ```
 
 Then upload the tarball somewhere permanent and POST it:
@@ -114,7 +142,7 @@ Then upload the tarball somewhere permanent and POST it:
 curl -X POST https://apps.nextcloud.com/api/v1/apps/releases \
      -H "Authorization: Token $APP_STORE_TOKEN" \
      -H 'Content-Type: application/json' \
-     -d '{"download": "https://…/nextcloud_cleaner-1.0.1.tar.gz", "signature": "…", "nightly": false}'
+     -d '{"download": "https://…/photosweep-1.0.1.tar.gz", "signature": "…", "nightly": false}'
 ```
 
 ---
@@ -125,7 +153,7 @@ curl -X POST https://apps.nextcloud.com/api/v1/apps/releases \
   [its schema](https://apps.nextcloud.com/schema/apps/info.xsd). CI validates this on
   every push, because otherwise you discover a malformed `info.xml` at the moment you
   are trying to publish.
-- The tarball contains exactly one top-level directory, named `nextcloud_cleaner`.
+- The tarball contains exactly one top-level directory, named `photosweep`.
 - The detached signature verifies against the registered certificate.
 - `<nextcloud min-version>`/`<max-version>` decide which servers are offered the app.
   **Raise `max-version` when a new Nextcloud comes out**, or the app quietly disappears

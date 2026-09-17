@@ -27,11 +27,11 @@ val appVersionCode: Int = run {
 }
 
 android {
-    namespace = "xyz.nextcloudcleaner"
+    namespace = "xyz.photosweep"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "xyz.nextcloudcleaner"
+        applicationId = "xyz.photosweep"
         minSdk = 26
         targetSdk = 35
         versionCode = appVersionCode

@@ -7,7 +7,7 @@
 	<div class="pc-index">
 		<div v-if="scan.running" class="pc-index__line">
 			<NcLoadingIcon :size="16" />
-			<span>{{ t('nextcloud_cleaner', 'Indexing — {found} so far', { found: scan.found }) }}</span>
+			<span>{{ t('photosweep', 'Indexing — {found} so far', { found: scan.found }) }}</span>
 		</div>
 		<div v-else class="pc-index__line">
 			<span>{{ indexedLabel }}</span>
@@ -19,10 +19,10 @@
 
 		<div class="pc-index__actions">
 			<NcButton variant="tertiary" :disabled="scan.running" @click="$emit('scan')">
-				{{ t('nextcloud_cleaner', 'Check for new photos') }}
+				{{ t('photosweep', 'Check for new photos') }}
 			</NcButton>
 			<NcButton variant="tertiary" :disabled="scan.running" @click="$emit('rebuild')">
-				{{ t('nextcloud_cleaner', 'Rebuild index') }}
+				{{ t('photosweep', 'Rebuild index') }}
 			</NcButton>
 		</div>
 	</div>
@@ -55,9 +55,9 @@ export default {
 	computed: {
 		indexedLabel() {
 			if (!this.summary.indexed) {
-				return t('nextcloud_cleaner', 'Nothing indexed yet')
+				return t('photosweep', 'Nothing indexed yet')
 			}
-			return n('nextcloud_cleaner', '%n photo indexed', '%n photos indexed', this.summary.indexed)
+			return n('photosweep', '%n photo indexed', '%n photos indexed', this.summary.indexed)
 		},
 	},
 

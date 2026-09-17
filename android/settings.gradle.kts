@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NextcloudCleaner"
+rootProject.name = "PhotoSweep"
 include(":app")

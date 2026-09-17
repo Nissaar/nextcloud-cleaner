@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Db;
+namespace OCA\PhotoSweep\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
@@ -18,7 +18,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Media>
  */
 class MediaMapper extends QBMapper {
-	public const TABLE = 'nc_cleaner_media';
+	public const TABLE = 'photosweep_media';
 
 	public function __construct(IDBConnection $db) {
 		parent::__construct($db, self::TABLE, Media::class);

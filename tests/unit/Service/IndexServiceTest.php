@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Tests\unit\Service;
+namespace OCA\PhotoSweep\Tests\unit\Service;
 
-use OCA\NextcloudCleaner\Service\IndexService;
+use OCA\PhotoSweep\Service\IndexService;
 use PHPUnit\Framework\TestCase;
 
 class IndexServiceTest extends TestCase {

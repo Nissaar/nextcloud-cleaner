@@ -7,12 +7,12 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Controller;
+namespace OCA\PhotoSweep\Controller;
 
-use OCA\NextcloudCleaner\Service\ConfigService;
-use OCA\NextcloudCleaner\Service\IndexService;
-use OCA\NextcloudCleaner\Service\TimelineService;
-use OCA\NextcloudCleaner\Service\TrashService;
+use OCA\PhotoSweep\Service\ConfigService;
+use OCA\PhotoSweep\Service\IndexService;
+use OCA\PhotoSweep\Service\TimelineService;
+use OCA\PhotoSweep\Service\TrashService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;

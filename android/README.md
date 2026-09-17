@@ -1,6 +1,6 @@
-# Nextcloud Cleaner for Android
+# Photo Sweep for Android
 
-The phone client for the [Nextcloud Cleaner Nextcloud app](../README.md). It talks to the
+The phone client for the [Photo Sweep Nextcloud app](../README.md). It talks to the
 same OCS API the web UI uses, so verdicts given here show up there and the other way
 round.
 
@@ -93,7 +93,7 @@ Then add four repository secrets under **Settings → Secrets and variables → 
 
 | Secret | Value |
 |---|---|
-| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 nextcloud-nextcloud-cleaner-release.jks` |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 nextcloud-photo-sweep-release.jks` |
 | `ANDROID_KEY_ALIAS` | the alias you chose |
 | `ANDROID_KEYSTORE_PASSWORD` | the password you chose |
 | `ANDROID_KEY_PASSWORD` | the same password (PKCS12 uses one for both) |
@@ -105,7 +105,7 @@ so forks work without configuration.
 ## Layout
 
 ```
-app/src/main/java/xyz/nextcloudcleaner/
+app/src/main/java/xyz/photosweep/
 ├── api/          Login Flow v2, the OCS client, and the wire models
 ├── data/         account store, offline verdict queue, repository
 ├── ui/           Compose screens

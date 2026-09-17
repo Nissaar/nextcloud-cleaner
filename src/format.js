@@ -65,12 +65,12 @@ export function sizeLabel(bytes) {
 export function dateSourceLabel(source) {
 	switch (source) {
 		case 'exif':
-			return t('nextcloud_cleaner', 'Date taken, from the photo itself')
+			return t('photosweep', 'Date taken, from the photo itself')
 		case 'filename':
-			return t('nextcloud_cleaner', 'Date read from the file name')
+			return t('photosweep', 'Date read from the file name')
 		case 'upload':
-			return t('nextcloud_cleaner', 'Date this file reached the server')
+			return t('photosweep', 'Date this file reached the server')
 		default:
-			return t('nextcloud_cleaner', 'Date the file was last changed — no capture date was available')
+			return t('photosweep', 'Date the file was last changed — no capture date was available')
 	}
 }

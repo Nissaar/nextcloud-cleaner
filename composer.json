@@ -1,5 +1,5 @@
 {
-	"name": "nissaar/nextcloud_cleaner",
+	"name": "nissaar/photosweep",
 	"description": "Go through your Nextcloud photo library one photo at a time",
 	"type": "project",
 	"license": "AGPL-3.0-or-later",
@@ -20,12 +20,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"OCA\\NextcloudCleaner\\": "lib/"
+			"OCA\\PhotoSweep\\": "lib/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"OCA\\NextcloudCleaner\\Tests\\": "tests/",
+			"OCA\\PhotoSweep\\Tests\\": "tests/",
 			"OCP\\": "vendor/nextcloud/ocp/OCP/",
 			"NCU\\": "vendor/nextcloud/ocp/NCU/"
 		}

@@ -1,5 +1,5 @@
 {
-  "name": "nextcloud_cleaner",
+  "name": "photosweep",
   "description": "Go through your Nextcloud photo library one photo at a time",
   "version": "1.0.0",
   "author": "Nissaar",

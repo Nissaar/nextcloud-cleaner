@@ -7,7 +7,7 @@ import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { generateOcsUrl, generateRemoteUrl, generateUrl } from '@nextcloud/router'
 
-const base = generateOcsUrl('apps/nextcloud_cleaner/api/v1')
+const base = generateOcsUrl('apps/photosweep/api/v1')
 
 const options = {
 	headers: { 'OCS-APIRequest': 'true' },

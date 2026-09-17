@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Nissaar
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-app_name = nextcloud_cleaner
+app_name = photosweep
 version = $(shell sed -ne 's/^\s*<version>\(.*\)<\/version>/\1/p' appinfo/info.xml)
 
 project_dir = $(CURDIR)
@@ -61,7 +61,7 @@ clean:
 
 # Assembles exactly what ships: no sources, no tests, no dev tooling. The app has
 # no runtime composer dependencies, so there is no vendor/ directory to carry —
-# Nextcloud autoloads OCA\NextcloudCleaner from lib/ by itself.
+# Nextcloud autoloads OCA\PhotoSweep from lib/ by itself.
 .PHONY: package
 package: build
 	rm -rf $(build_dir)

@@ -1,4 +1,4 @@
-# Nextcloud Cleaner
+# Photo Sweep
 
 Go through your Nextcloud photo library one photo at a time, month by month, keeping
 or deleting each one. Deletions are real — they go to the Nextcloud trash, not just
@@ -45,7 +45,7 @@ rather than letting you find out afterwards.
 ## Where "date taken" comes from
 
 This is the whole premise of a month-by-month review, and Nextcloud does not store it
-as a first-class field. Nextcloud Cleaner walks a chain, best evidence first, and records
+as a first-class field. Photo Sweep walks a chain, best evidence first, and records
 which link answered so an odd-looking month is explainable rather than mysterious:
 
 | Order | Source | When it applies |
@@ -80,20 +80,20 @@ which the app tells you per photo.
 
 ## Installing
 
-From the Nextcloud app store: **Apps → Multimedia → Nextcloud Cleaner → Download and
+From the Nextcloud app store: **Apps → Multimedia → Photo Sweep → Download and
 enable**.
 
 By hand:
 
 ```bash
 cd /path/to/nextcloud/apps
-git clone https://github.com/Nissaar/nextcloud-cleaner.git nextcloud_cleaner
-cd nextcloud_cleaner
+git clone https://github.com/Nissaar/nextcloud-cleaner.git photosweep
+cd photosweep
 npm ci && npm run build
-sudo -u www-data php ../../occ app:enable nextcloud_cleaner
+sudo -u www-data php ../../occ app:enable photosweep
 ```
 
-The directory **must** be named `nextcloud_cleaner` — Nextcloud resolves an app by its
+The directory **must** be named `photosweep` — Nextcloud resolves an app by its
 directory name, and the repository is named after the project rather than the app id.
 
 ### First index
@@ -103,7 +103,7 @@ library the first pass is better run from the command line, where there is no re
 timeout and you can watch it:
 
 ```bash
-sudo -u www-data php occ nextcloud_cleaner:index alice --until-complete
+sudo -u www-data php occ photosweep:index alice --until-complete
 ```
 
 After that a background job keeps it current. Without a working cron the index only
@@ -119,19 +119,19 @@ write use exactly the same endpoints. Authenticate with an
 over Basic auth and send `OCS-APIRequest: true`.
 
 ```
-GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/index            index state + totals
-POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/index            advance the index one chunk
-GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/months           every month, with progress
-GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/months/2024-07   one month's photos
-DELETE /ocs/v2.php/apps/nextcloud_cleaner/api/v1/months/2024-07   forget that month's verdicts
-GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions/pending
-GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions/applied
-POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions        record one, or a batch
-DELETE /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions/{id}   undo a pending verdict
-POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/apply            carry out every pending delete
-POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/restore          bring applied items back
-GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/config
-PUT    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/config
+GET    /ocs/v2.php/apps/photosweep/api/v1/index            index state + totals
+POST   /ocs/v2.php/apps/photosweep/api/v1/index            advance the index one chunk
+GET    /ocs/v2.php/apps/photosweep/api/v1/months           every month, with progress
+GET    /ocs/v2.php/apps/photosweep/api/v1/months/2024-07   one month's photos
+DELETE /ocs/v2.php/apps/photosweep/api/v1/months/2024-07   forget that month's verdicts
+GET    /ocs/v2.php/apps/photosweep/api/v1/decisions/pending
+GET    /ocs/v2.php/apps/photosweep/api/v1/decisions/applied
+POST   /ocs/v2.php/apps/photosweep/api/v1/decisions        record one, or a batch
+DELETE /ocs/v2.php/apps/photosweep/api/v1/decisions/{id}   undo a pending verdict
+POST   /ocs/v2.php/apps/photosweep/api/v1/apply            carry out every pending delete
+POST   /ocs/v2.php/apps/photosweep/api/v1/restore          bring applied items back
+GET    /ocs/v2.php/apps/photosweep/api/v1/config
+PUT    /ocs/v2.php/apps/photosweep/api/v1/config
 ```
 
 `POST /decisions` accepts either `{fileId, verdict}` or `{verdicts: [{fileId, verdict}, …]}`.
@@ -184,7 +184,7 @@ Requires PHP 8.1+ and Node 20+.
 make dev-setup          # composer install && npm ci
 make build              # compile the frontend into js/
 make test               # coding standard, psalm, phpunit, eslint
-make package            # assemble build/nextcloud_cleaner/
+make package            # assemble build/photosweep/
 make appstore           # ... and sign and tar it
 ```
 

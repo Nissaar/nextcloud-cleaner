@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Generates the release signing key for Nextcloud Cleaner.
+# Generates the release signing key for Photo Sweep.
 #
 # Run this ONCE. The resulting keystore is the app's permanent identity: Android
 # only accepts an update if it is signed by the same key as the installed version.
@@ -14,8 +14,8 @@
 
 set -euo pipefail
 
-OUT="${1:-nextcloud-cleaner-release.jks}"
-ALIAS="${2:-nextcloudcleaner}"
+OUT="${1:-photo-sweep-release.jks}"
+ALIAS="${2:-photosweep}"
 
 if [ -e "$OUT" ]; then
     echo "Refusing to overwrite the existing keystore at: $OUT" >&2

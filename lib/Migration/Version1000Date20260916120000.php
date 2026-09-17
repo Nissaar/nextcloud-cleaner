@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Migration;
+namespace OCA\PhotoSweep\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
@@ -28,8 +28,8 @@ class Version1000Date20260916120000 extends SimpleMigrationStep {
 		/** @var ISchemaWrapper $schema */
 		$schema = $schemaClosure();
 
-		if (!$schema->hasTable('nc_cleaner_media')) {
-			$table = $schema->createTable('nc_cleaner_media');
+		if (!$schema->hasTable('photosweep_media')) {
+			$table = $schema->createTable('photosweep_media');
 			$table->addColumn('id', Types::BIGINT, [
 				'autoincrement' => true,
 				'notnull' => true,
@@ -53,13 +53,13 @@ class Version1000Date20260916120000 extends SimpleMigrationStep {
 			$table->addColumn('indexed_at', Types::BIGINT, ['notnull' => true, 'length' => 20, 'default' => 0]);
 
 			$table->setPrimaryKey(['id']);
-			$table->addUniqueIndex(['user_id', 'file_id'], 'nc_cleaner_media_uf');
-			$table->addIndex(['user_id', 'year_month'], 'nc_cleaner_media_uym');
-			$table->addIndex(['user_id', 'taken_at'], 'nc_cleaner_media_uta');
+			$table->addUniqueIndex(['user_id', 'file_id'], 'photosweep_media_uf');
+			$table->addIndex(['user_id', 'year_month'], 'photosweep_media_uym');
+			$table->addIndex(['user_id', 'taken_at'], 'photosweep_media_uta');
 		}
 
-		if (!$schema->hasTable('nc_cleaner_decisions')) {
-			$table = $schema->createTable('nc_cleaner_decisions');
+		if (!$schema->hasTable('photosweep_decisions')) {
+			$table = $schema->createTable('photosweep_decisions');
 			$table->addColumn('id', Types::BIGINT, [
 				'autoincrement' => true,
 				'notnull' => true,
@@ -91,13 +91,13 @@ class Version1000Date20260916120000 extends SimpleMigrationStep {
 			$table->addColumn('is_video', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
 
 			$table->setPrimaryKey(['id']);
-			$table->addUniqueIndex(['user_id', 'file_id'], 'nc_cleaner_dec_uf');
-			$table->addIndex(['user_id', 'verdict', 'applied'], 'nc_cleaner_dec_uva');
-			$table->addIndex(['user_id', 'year_month'], 'nc_cleaner_dec_uym');
+			$table->addUniqueIndex(['user_id', 'file_id'], 'photosweep_dec_uf');
+			$table->addIndex(['user_id', 'verdict', 'applied'], 'photosweep_dec_uva');
+			$table->addIndex(['user_id', 'year_month'], 'photosweep_dec_uym');
 		}
 
-		if (!$schema->hasTable('nc_cleaner_scans')) {
-			$table = $schema->createTable('nc_cleaner_scans');
+		if (!$schema->hasTable('photosweep_scans')) {
+			$table = $schema->createTable('photosweep_scans');
 			$table->addColumn('id', Types::BIGINT, [
 				'autoincrement' => true,
 				'notnull' => true,
@@ -116,7 +116,7 @@ class Version1000Date20260916120000 extends SimpleMigrationStep {
 			$table->addColumn('error', Types::STRING, ['notnull' => false, 'length' => 255]);
 
 			$table->setPrimaryKey(['id']);
-			$table->addUniqueIndex(['user_id'], 'nc_cleaner_scans_u');
+			$table->addUniqueIndex(['user_id'], 'photosweep_scans_u');
 		}
 
 		return $schema;

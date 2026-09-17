@@ -5,14 +5,14 @@
 # reflectively; R8 cannot see those links and would strip them.
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.**
--keepclassmembers class xyz.nextcloudcleaner.** {
+-keepclassmembers class xyz.photosweep.** {
     *** Companion;
 }
--keepclasseswithmembers class xyz.nextcloudcleaner.** {
+-keepclasseswithmembers class xyz.photosweep.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
--keep,includedescriptorclasses class xyz.nextcloudcleaner.api.**$$serializer { *; }
--keep,includedescriptorclasses class xyz.nextcloudcleaner.data.**$$serializer { *; }
+-keep,includedescriptorclasses class xyz.photosweep.api.**$$serializer { *; }
+-keep,includedescriptorclasses class xyz.photosweep.data.**$$serializer { *; }
 
 # Tink, pulled in by androidx.security.crypto, is compiled against ErrorProne
 # annotations that are not on the runtime classpath.

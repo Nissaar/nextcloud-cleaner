@@ -7,10 +7,10 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Tests\unit\Service;
+namespace OCA\PhotoSweep\Tests\unit\Service;
 
-use OCA\NextcloudCleaner\Db\DateSource;
-use OCA\NextcloudCleaner\Service\DateResolver;
+use OCA\PhotoSweep\Db\DateSource;
+use OCA\PhotoSweep\Service\DateResolver;
 use OCP\Files\File;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\Model\IFilesMetadata;

@@ -7,13 +7,13 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\NextcloudCleaner\Tests\unit\Db;
+namespace OCA\PhotoSweep\Tests\unit\Db;
 
-use OCA\NextcloudCleaner\Db\DateSource;
-use OCA\NextcloudCleaner\Db\Decision;
-use OCA\NextcloudCleaner\Db\Media;
-use OCA\NextcloudCleaner\Db\Scan;
-use OCA\NextcloudCleaner\Db\Verdict;
+use OCA\PhotoSweep\Db\DateSource;
+use OCA\PhotoSweep\Db\Decision;
+use OCA\PhotoSweep\Db\Media;
+use OCA\PhotoSweep\Db\Scan;
+use OCA\PhotoSweep\Db\Verdict;
 use OCP\AppFramework\Db\Entity;
 use PHPUnit\Framework\TestCase;
 
