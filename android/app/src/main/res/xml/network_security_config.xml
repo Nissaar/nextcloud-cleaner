@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext is refused outright. An app password travelling over plain HTTP is a
+  credential handed to anyone on the same network, and a Nextcloud without TLS is not
+  a server this app should help anyone use.
+
+  User-installed certificate authorities are not trusted either, which means a proxy
+  cannot be interposed to read the traffic by installing a certificate on the device.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

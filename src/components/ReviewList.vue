@@ -249,7 +249,7 @@ export default {
 				if (result.restored) {
 					showSuccess(t('photocleaner', 'Brought back'))
 				} else {
-					showError(Object.values(result.failures)[0] ?? t('photocleaner', 'Could not bring that back'))
+					showError(result.failures[0]?.reason ?? t('photocleaner', 'Could not bring that back'))
 				}
 				await this.load()
 				this.$emit('changed')

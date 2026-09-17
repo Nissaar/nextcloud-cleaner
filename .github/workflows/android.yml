@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Android
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: android
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain
+
+      - name: Debug build
+        run: ./gradlew :app:assembleDebug --console=plain
+
+      # R8 catches what debug does not — missing keep rules for the serializers,
+      # and stripped classes that only fail at runtime.
+      - name: Release build
+        run: ./gradlew :app:assembleRelease --console=plain
+
+      # The permission set is a promise the README makes. A dependency bump that
+      # quietly adds one should fail here rather than ship.
+      - name: Check the permission set has not grown
+        run: |
+          manifest=app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+          actual=$(grep -o 'android:name="android.permission[^"]*"' "$manifest" \
+                   | sed 's/.*permission\.//; s/"//' | sort -u | tr '\n' ' ')
+          expected="INTERNET USE_BIOMETRIC USE_FINGERPRINT "
+          if [ "$actual" != "$expected" ]; then
+            echo "Permissions changed." >&2
+            echo "  expected: $expected" >&2
+            echo "  actual:   $actual" >&2
+            exit 1
+          fi
+          echo "Permissions unchanged: $actual"

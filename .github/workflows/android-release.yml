@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Android release
+
+on:
+  push:
+    tags: ['android-v*']
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: android
+
+jobs:
+  release:
+    name: Build, sign and publish the APK
+    runs-on: ubuntu-latest
+
+    # Declared at job level: a step's `if:` is evaluated before its own `env:`
+    # exists, so a step-level definition would make every guard below false.
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain
+
+      # The version name and code both come from the tag, so the tag, the APK and
+      # the published release cannot disagree.
+      - name: Build
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./gradlew :app:assembleRelease --console=plain
+
+      - name: Sign the APK
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$build_tools/apksigner" sign \
+            --ks "$RUNNER_TEMP/release.jks" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
+            --key-pass "pass:$ANDROID_KEY_PASSWORD" \
+            --out "app/build/outputs/apk/release/photo-cleaner-${GITHUB_REF_NAME#android-v}.apk" \
+            app/build/outputs/apk/release/app-release-unsigned.apk
+          "$build_tools/apksigner" verify --print-certs \
+            "app/build/outputs/apk/release/photo-cleaner-${GITHUB_REF_NAME#android-v}.apk"
+          rm -f "$RUNNER_TEMP/release.jks"
+
+      - name: Label the build as unsigned
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' }}
+        run: |
+          echo "::warning::No signing secrets — publishing an unsigned APK, which will not install without being signed first."
+          mv app/build/outputs/apk/release/app-release-unsigned.apk \
+             "app/build/outputs/apk/release/photo-cleaner-${GITHUB_REF_NAME#android-v}-UNSIGNED.apk"
+
+      - name: Checksum
+        run: |
+          cd app/build/outputs/apk/release
+          sha256sum photo-cleaner-*.apk > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            android/app/build/outputs/apk/release/photo-cleaner-*.apk
+            android/app/build/outputs/apk/release/SHA256SUMS.txt
+          generate_release_notes: true

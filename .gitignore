@@ -22,3 +22,13 @@
 /.idea/
 /.vscode/
 *.log
+
+# --- Android client -------------------------------------------------------
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+*.jks
+*.keystore

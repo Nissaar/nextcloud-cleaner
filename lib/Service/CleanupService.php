@@ -120,7 +120,7 @@ class CleanupService {
 		return new ApplyResult(
 			$mode,
 			count($succeededIds),
-			$failures,
+			ApplyResult::failuresFrom($failures),
 			$target === null ? null : $userFolder->getRelativePath($target->getPath()),
 		);
 	}
@@ -133,7 +133,7 @@ class CleanupService {
 	 * returns to the library undecided, which is what "I changed my mind" means.
 	 *
 	 * @param int[] $fileIds
-	 * @return array{restored: int, failures: array<int, string>}
+	 * @return array{restored: int, failures: Failure[]}
 	 */
 	public function restore(string $userId, array $fileIds): array {
 		if ($fileIds === []) {
@@ -185,7 +185,7 @@ class CleanupService {
 			$this->decisionMapper->removeByFileIds($userId, $restoredIds);
 		}
 
-		return ['restored' => count($restoredIds), 'failures' => $failures];
+		return ['restored' => count($restoredIds), 'failures' => ApplyResult::failuresFrom($failures)];
 	}
 
 	/**
