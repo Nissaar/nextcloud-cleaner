@@ -14,7 +14,7 @@ Three names are in play and only one of them is permanent:
 |---|---|---|
 | **App id** | `photosweep` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
 | Display name | Photo Sweep | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
-| Repository | `nextcloud-cleaner` | Yes. GitHub only; Nextcloud never sees it. |
+| Repository | `photo-sweep` | Yes. GitHub only; Nextcloud never sees it. |
 
 The id is restricted to `[a-z]+[a-z0-9_]*[a-z0-9]+` — lowercase letters, digits and
 underscores, 32 characters at most. No hyphens, so a repository name with one in it

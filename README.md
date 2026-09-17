@@ -87,7 +87,7 @@ By hand:
 
 ```bash
 cd /path/to/nextcloud/apps
-git clone https://github.com/Nissaar/nextcloud-cleaner.git photosweep
+git clone https://github.com/Nissaar/photo-sweep.git photosweep
 cd photosweep
 npm ci && npm run build
 sudo -u www-data php ../../occ app:enable photosweep

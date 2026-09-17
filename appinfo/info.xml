@@ -33,9 +33,9 @@ review from your phone.
 	<namespace>PhotoSweep</namespace>
 	<category>multimedia</category>
 	<category>files</category>
-	<website>https://github.com/Nissaar/nextcloud-cleaner</website>
-	<bugs>https://github.com/Nissaar/nextcloud-cleaner/issues</bugs>
-	<repository type="git">https://github.com/Nissaar/nextcloud-cleaner.git</repository>
+	<website>https://github.com/Nissaar/photo-sweep</website>
+	<bugs>https://github.com/Nissaar/photo-sweep/issues</bugs>
+	<repository type="git">https://github.com/Nissaar/photo-sweep.git</repository>
 	<dependencies>
 		<php min-version="8.1"/>
 		<nextcloud min-version="31" max-version="34"/>
