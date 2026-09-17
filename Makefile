@@ -71,6 +71,10 @@ package: build
 	cp -r templates $(package_dir)/
 	cp -r img $(package_dir)/
 	cp -r js $(package_dir)/
+	# Source maps are 11MB of a 14MB app — four fifths of what every server would
+	# download and store, to debug minified code almost nobody will debug. They stay
+	# in the build directory and out of the release.
+	find $(package_dir)/js -name '*.map' -delete
 	[ -d l10n ] && cp -r l10n $(package_dir)/ || true
 	cp COPYING $(package_dir)/
 	cp README.md $(package_dir)/

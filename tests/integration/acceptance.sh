@@ -68,6 +68,18 @@ $DOCKER exec "$CT" chown -R www-data:www-data /var/www/html/custom_apps/nextclou
 OUT=$(occ app:enable nextcloud_cleaner)
 echo "$OUT" | grep -q enabled && ok "app:enable" || bad "app:enable — $OUT"
 
+# Dropping an app into a server that is already running can leave OCS routes cached
+# without it, and every API call then answers 998 "invalid query". A real install goes
+# through Nextcloud itself and does not hit this, but the harness has to be
+# deterministic, so bounce the container and let the route table rebuild.
+$DOCKER restart "$CT" >/dev/null
+for _ in $(seq 1 60); do
+  curl -s -m 5 "http://localhost:$PORT/status.php" 2>/dev/null | grep -q '"installed":true' && break
+  sleep 3
+done
+curl -s -m 5 "http://localhost:$PORT/status.php" | grep -q '"installed":true' \
+  && ok "server came back after the restart" || bad "the server did not come back"
+
 # Everything after this point must leave the log clean.
 $DOCKER exec "$CT" sh -c ': > /var/www/html/data/nextcloud.log'
 
