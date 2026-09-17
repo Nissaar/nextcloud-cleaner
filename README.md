@@ -155,10 +155,14 @@ therefore leaves work pending and safe to retry, rather than claiming work it di
 do. Each file is handled on its own, so one permission error costs one photo instead
 of the batch.
 
-**The index scan is resumable.** It walks file ids ascending and stores a cursor, so a
-process killed mid-scan costs one batch of 500 rather than the whole pass. A file-id
-cursor is used rather than an offset because an offset drifts as files are added
-underneath it, silently skipping or repeating items.
+**The index scan is resumable.** It walks the library ordered by file id and stores
+how far it reached, so a process killed mid-scan costs one batch of 500 rather than
+the whole pass. A "file id greater than" cursor would resume more exactly, but
+Nextcloud's file search only accepts `eq` and `in` on `fileid`, so it cannot be
+expressed; ordering by file id makes the offset about as stable as an offset gets,
+since new uploads take higher ids and land past the window rather than shifting it.
+A completed pass then sweeps any row it did not touch, which is what keeps the index
+honest about files that left while the app was not watching.
 
 **Private API use is confined to two files.** `MediaFinder` needs `OC\Files\Search\*`
 because there is no public factory for a paged `ISearchQuery`; `TrashService` needs

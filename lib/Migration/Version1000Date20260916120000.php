@@ -104,9 +104,10 @@ class Version1000Date20260916120000 extends SimpleMigrationStep {
 				'length' => 20,
 			]);
 			$table->addColumn('user_id', Types::STRING, ['notnull' => true, 'length' => 64]);
-			// Keyset cursor: the scan walks file ids ascending, so an interrupted run
-			// resumes exactly where it stopped without re-reading or skipping.
-			$table->addColumn('cursor_file_id', Types::BIGINT, ['notnull' => true, 'length' => 20, 'default' => 0]);
+			// How far into the ordered result set the scan has reached. A keyset
+			// cursor on file id would resume more exactly, but Nextcloud's file
+			// search only accepts eq and in on fileid, so it cannot be expressed.
+			$table->addColumn('cursor_offset', Types::BIGINT, ['notnull' => true, 'length' => 20, 'default' => 0]);
 			$table->addColumn('complete', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
 			$table->addColumn('running', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
 			$table->addColumn('found', Types::INTEGER, ['notnull' => true, 'default' => 0]);

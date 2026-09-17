@@ -16,8 +16,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @method string getUserId()
  * @method void setUserId(string $userId)
- * @method int getCursorFileId()
- * @method void setCursorFileId(int $cursorFileId)
+ * @method int getCursorOffset()
+ * @method void setCursorOffset(int $cursorOffset)
  * @method bool getComplete()
  * @method void setComplete(bool $complete)
  * @method bool getRunning()
@@ -32,17 +32,27 @@ use OCP\AppFramework\Db\Entity;
  * @method void setError(?string $error)
  */
 class Scan extends Entity implements \JsonSerializable {
-	protected $userId = '';
-	protected $cursorFileId = 0;
-	protected $complete = false;
-	protected $running = false;
-	protected $found = 0;
-	protected $startedAt = 0;
-	protected $updatedAt = 0;
+	/*
+	 * Every property below is deliberately left uninitialised rather than given a
+	 * sensible-looking default.
+	 *
+	 * `Entity::setter()` returns early when the value being set is identical to the
+	 * property's current value, and an early return means the field is never marked
+	 * dirty — so `QBMapper::insert()` leaves that column out of the INSERT entirely.
+	 * Any property whose default matched a real value would silently write a null.
+	 * Starting from null means no real value can ever collide with the default.
+	 */
+	protected $userId = null;
+	protected $cursorOffset = null;
+	protected $complete = null;
+	protected $running = null;
+	protected $found = null;
+	protected $startedAt = null;
+	protected $updatedAt = null;
 	protected $error = null;
 
 	public function __construct() {
-		$this->addType('cursorFileId', 'integer');
+		$this->addType('cursorOffset', 'integer');
 		$this->addType('complete', 'boolean');
 		$this->addType('running', 'boolean');
 		$this->addType('found', 'integer');
@@ -52,11 +62,11 @@ class Scan extends Entity implements \JsonSerializable {
 
 	public function jsonSerialize(): array {
 		return [
-			'complete' => $this->getComplete(),
-			'running' => $this->getRunning(),
-			'found' => $this->getFound(),
-			'startedAt' => $this->getStartedAt(),
-			'updatedAt' => $this->getUpdatedAt(),
+			'complete' => (bool)$this->getComplete(),
+			'running' => (bool)$this->getRunning(),
+			'found' => (int)$this->getFound(),
+			'startedAt' => (int)$this->getStartedAt(),
+			'updatedAt' => (int)$this->getUpdatedAt(),
 			'error' => $this->getError(),
 		];
 	}

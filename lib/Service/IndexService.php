@@ -97,23 +97,23 @@ class IndexService {
 
 		if ($full) {
 			$this->mediaMapper->removeAllForUser($userId);
-			$scan->setCursorFileId(0);
+			$scan->setCursorOffset(0);
 			$scan->setFound(0);
 			$scan->setComplete(false);
 		}
 
-		// A completed index is refreshed by walking it again from the start: file ids
-		// climb, so the cheap path of "carry on past the cursor" would only ever find
-		// new uploads and would never notice a file that left.
+		// A completed index is refreshed by walking it again from the start rather than
+		// carrying on from where it stopped: resuming would only ever find new
+		// uploads and would never notice a file that left.
 		if ($scan->getComplete() && !$full) {
-			$scan->setCursorFileId(0);
+			$scan->setCursorOffset(0);
 			$scan->setFound(0);
 			$scan->setComplete(false);
 		}
 
 		$scan->setRunning(true);
 		$scan->setError(null);
-		if ($scan->getCursorFileId() === 0) {
+		if ($scan->getCursorOffset() === 0) {
 			$scan->setStartedAt($now);
 		}
 		$scan->setUpdatedAt($now);
@@ -152,7 +152,7 @@ class IndexService {
 
 		$batches = 0;
 		while ($batches++ < $maxBatches) {
-			$files = $this->finder->findBatch($scope, $scan->getCursorFileId(), self::BATCH_SIZE);
+			$files = $this->finder->findBatch($scope, $scan->getCursorOffset(), self::BATCH_SIZE);
 			if ($files === []) {
 				$this->finishPass($userId, $scan);
 				break;
@@ -160,8 +160,7 @@ class IndexService {
 
 			$indexed = $this->indexBatch($userId, $userFolder, $files, $timezone, $excludedPrefix);
 
-			$lastFile = $files[count($files) - 1];
-			$scan->setCursorFileId($lastFile->getId());
+			$scan->setCursorOffset($scan->getCursorOffset() + count($files));
 			$scan->setFound($scan->getFound() + $indexed);
 			$scan->setUpdatedAt(time());
 			// Written every batch: this is what makes the scan resumable, and what

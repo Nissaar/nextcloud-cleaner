@@ -43,6 +43,16 @@ class ScanMapper extends QBMapper {
 		}
 		$scan = new Scan();
 		$scan->setUserId($userId);
+		// Set explicitly rather than relying on the entity's defaults: the properties
+		// start as null so that no real value can collide with a default and be
+		// silently dropped from the INSERT, which means the starting values have to
+		// be written here.
+		$scan->setCursorOffset(0);
+		$scan->setComplete(false);
+		$scan->setRunning(false);
+		$scan->setFound(0);
+		$scan->setStartedAt(0);
+		$scan->setUpdatedAt(0);
 		return $this->insert($scan);
 	}
 

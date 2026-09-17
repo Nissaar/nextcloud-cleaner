@@ -46,19 +46,30 @@ use OCP\AppFramework\Db\Entity;
  * @method void setIsVideo(bool $isVideo)
  */
 class Decision extends Entity implements \JsonSerializable {
-	protected $userId = '';
-	protected $fileId = 0;
-	protected $verdict = Verdict::KEEP;
-	protected $decidedAt = 0;
-	protected $applied = false;
+	/*
+	 * Every property below is deliberately left uninitialised rather than given a
+	 * sensible-looking default.
+	 *
+	 * `Entity::setter()` returns early when the value being set is identical to the
+	 * property's current value, and an early return means the field is never marked
+	 * dirty — so `QBMapper::insert()` leaves that column out of the INSERT entirely.
+	 * With `protected $verdict = 'keep'`, recording a *keep* wrote a row with a null
+	 * verdict and the database rejected it, while a delete inserted cleanly. Starting
+	 * from null means no real value can ever collide with the default.
+	 */
+	protected $userId = null;
+	protected $fileId = null;
+	protected $verdict = null;
+	protected $decidedAt = null;
+	protected $applied = null;
 	protected $appliedAt = null;
 	protected $appliedMode = null;
-	protected $takenAt = 0;
-	protected $yearMonth = '';
-	protected $name = '';
-	protected $size = 0;
+	protected $takenAt = null;
+	protected $yearMonth = null;
+	protected $name = null;
+	protected $size = null;
 	protected $originPath = null;
-	protected $isVideo = false;
+	protected $isVideo = null;
 
 	public function __construct() {
 		$this->addType('fileId', 'integer');
@@ -72,18 +83,18 @@ class Decision extends Entity implements \JsonSerializable {
 
 	public function jsonSerialize(): array {
 		return [
-			'fileId' => $this->getFileId(),
-			'verdict' => $this->getVerdict(),
-			'decidedAt' => $this->getDecidedAt(),
-			'applied' => $this->getApplied(),
+			'fileId' => (int)$this->getFileId(),
+			'verdict' => (string)$this->getVerdict(),
+			'decidedAt' => (int)$this->getDecidedAt(),
+			'applied' => (bool)$this->getApplied(),
 			'appliedAt' => $this->getAppliedAt(),
 			'appliedMode' => $this->getAppliedMode(),
-			'takenAt' => $this->getTakenAt(),
-			'yearMonth' => $this->getYearMonth(),
-			'name' => $this->getName(),
-			'size' => $this->getSize(),
+			'takenAt' => (int)$this->getTakenAt(),
+			'yearMonth' => (string)$this->getYearMonth(),
+			'name' => (string)$this->getName(),
+			'size' => (int)$this->getSize(),
 			'originPath' => $this->getOriginPath(),
-			'isVideo' => $this->getIsVideo(),
+			'isVideo' => (bool)$this->getIsVideo(),
 		];
 	}
 }

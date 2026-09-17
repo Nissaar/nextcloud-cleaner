@@ -31,7 +31,8 @@ use Psr\Log\LoggerInterface;
  *
  * If those classes ever move, {@see findBatch} degrades to the public
  * `Folder::searchByMime()` instead of breaking. That path loads the whole result set
- * rather than a page, so it is slower on a large library, but it keeps working.
+ * before slicing it, so it is slower on a large library, but it keeps working and
+ * returns the same pages in the same order.
  */
 class MediaFinder {
 
@@ -50,18 +51,23 @@ class MediaFinder {
 	}
 
 	/**
-	 * One page of media, ordered by file id ascending and starting after [$afterFileId].
+	 * One page of media, ordered by file id ascending.
 	 *
-	 * File id is the paging key rather than an offset because the index is built over
-	 * many background runs: an offset drifts as files are added or removed underneath
-	 * it, silently skipping or repeating items, while a file-id cursor cannot.
+	 * Paged by offset rather than by a "file id greater than" cursor, which would be
+	 * the sturdier choice: Nextcloud's file search only accepts `eq` and `in` on
+	 * `fileid`, so a keyset cursor is not expressible through it at all. Ordering by
+	 * file id still makes the offset about as stable as an offset can be — new uploads
+	 * take higher ids and land past the window rather than shifting it — and a scan is
+	 * finished off by a sweep that drops anything the pass did not touch, so the
+	 * remaining risk is that a file deleted mid-scan lets one other file slip past
+	 * this pass. The next complete pass picks it up.
 	 *
 	 * @return File[]
 	 */
-	public function findBatch(Folder $scope, int $afterFileId, int $limit): array {
+	public function findBatch(Folder $scope, int $offset, int $limit): array {
 		if (class_exists(SearchQuery::class)) {
 			try {
-				return $this->searchPaged($scope, $afterFileId, $limit);
+				return $this->searchPaged($scope, $offset, $limit);
 			} catch (\Throwable $e) {
 				$this->logger->warning('Paged media search failed, falling back to searchByMime', [
 					'exception' => $e,
@@ -69,13 +75,13 @@ class MediaFinder {
 				]);
 			}
 		}
-		return $this->searchByMimeFallback($scope, $afterFileId, $limit);
+		return $this->searchByMimeFallback($scope, $offset, $limit);
 	}
 
 	/**
 	 * @return File[]
 	 */
-	private function searchPaged(Folder $scope, int $afterFileId, int $limit): array {
+	private function searchPaged(Folder $scope, int $offset, int $limit): array {
 		$mimeComparisons = [];
 		foreach (self::MIME_PREFIXES as $prefix) {
 			$mimeComparisons[] = new SearchComparison(
@@ -85,15 +91,10 @@ class MediaFinder {
 			);
 		}
 
-		$operator = new SearchBinaryOperator(ISearchBinaryOperator::OPERATOR_AND, [
-			new SearchBinaryOperator(ISearchBinaryOperator::OPERATOR_OR, $mimeComparisons),
-			new SearchComparison(ISearchComparison::COMPARE_GREATER_THAN, 'fileid', $afterFileId),
-		]);
-
 		$query = new SearchQuery(
-			$operator,
+			new SearchBinaryOperator(ISearchBinaryOperator::OPERATOR_OR, $mimeComparisons),
 			$limit,
-			0,
+			$offset,
 			[new SearchOrder(ISearchOrder::DIRECTION_ASCENDING, 'fileid')],
 		);
 
@@ -108,7 +109,7 @@ class MediaFinder {
 	 *
 	 * @return File[]
 	 */
-	private function searchByMimeFallback(Folder $scope, int $afterFileId, int $limit): array {
+	private function searchByMimeFallback(Folder $scope, int $offset, int $limit): array {
 		$nodes = [];
 		foreach (self::MIME_PREFIXES as $prefix) {
 			foreach ($scope->searchByMime($prefix) as $node) {
@@ -117,10 +118,11 @@ class MediaFinder {
 		}
 
 		$files = $this->onlyFiles($nodes);
-		$files = array_values(array_filter($files, static fn (File $f): bool => $f->getId() > $afterFileId));
+		// Same order as the paged path, so a fallback mid-scan does not reshuffle
+		// the window and skip whatever the previous page had already passed.
 		usort($files, static fn (File $a, File $b): int => $a->getId() <=> $b->getId());
 
-		return array_slice($files, 0, $limit);
+		return array_slice($files, $offset, $limit);
 	}
 
 	/**

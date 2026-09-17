@@ -42,17 +42,27 @@ use OCP\AppFramework\Db\Entity;
  * @method void setIndexedAt(int $indexedAt)
  */
 class Media extends Entity implements \JsonSerializable {
-	protected $userId = '';
-	protected $fileId = 0;
-	protected $takenAt = 0;
-	protected $yearMonth = '';
-	protected $isVideo = false;
-	protected $mimetype = '';
-	protected $name = '';
-	protected $path = '';
-	protected $size = 0;
-	protected $dateSource = DateSource::MTIME;
-	protected $indexedAt = 0;
+	/*
+	 * Every property below is deliberately left uninitialised rather than given a
+	 * sensible-looking default.
+	 *
+	 * `Entity::setter()` returns early when the value being set is identical to the
+	 * property's current value, and an early return means the field is never marked
+	 * dirty — so `QBMapper::insert()` leaves that column out of the INSERT entirely.
+	 * Any property whose default matched a real value would silently write a null.
+	 * Starting from null means no real value can ever collide with the default.
+	 */
+	protected $userId = null;
+	protected $fileId = null;
+	protected $takenAt = null;
+	protected $yearMonth = null;
+	protected $isVideo = null;
+	protected $mimetype = null;
+	protected $name = null;
+	protected $path = null;
+	protected $size = null;
+	protected $dateSource = null;
+	protected $indexedAt = null;
 
 	public function __construct() {
 		$this->addType('fileId', 'integer');
@@ -64,15 +74,15 @@ class Media extends Entity implements \JsonSerializable {
 
 	public function jsonSerialize(): array {
 		return [
-			'fileId' => $this->getFileId(),
-			'takenAt' => $this->getTakenAt(),
-			'yearMonth' => $this->getYearMonth(),
-			'isVideo' => $this->getIsVideo(),
-			'mimetype' => $this->getMimetype(),
-			'name' => $this->getName(),
-			'path' => $this->getPath(),
-			'size' => $this->getSize(),
-			'dateSource' => $this->getDateSource(),
+			'fileId' => (int)$this->getFileId(),
+			'takenAt' => (int)$this->getTakenAt(),
+			'yearMonth' => (string)$this->getYearMonth(),
+			'isVideo' => (bool)$this->getIsVideo(),
+			'mimetype' => (string)$this->getMimetype(),
+			'name' => (string)$this->getName(),
+			'path' => (string)$this->getPath(),
+			'size' => (int)$this->getSize(),
+			'dateSource' => (string)$this->getDateSource(),
 		];
 	}
 }
