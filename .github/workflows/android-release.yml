@@ -1,11 +1,19 @@
 # SPDX-FileCopyrightText: 2026 Nissaar
 # SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Publishes the Android client. Tagged separately from the server app — the two are
+# versioned independently, because a server release rarely needs a new APK.
 
 name: Android release
 
 on:
   push:
     tags: ['android-v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build (e.g. android-v1.0.0)'
+        required: true
 
 permissions:
   contents: write
@@ -16,21 +24,30 @@ defaults:
 
 jobs:
   release:
-    name: Build, sign and publish the APK
+    name: Build and publish APK
     runs-on: ubuntu-latest
 
-    # Declared at job level: a step's `if:` is evaluated before its own `env:`
-    # exists, so a step-level definition would make every guard below false.
+    # Hoisted to job level on purpose: the `secrets` context is not available in a
+    # step-level `if`, but `env` is. This is what makes optional signing work.
     env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        working-directory: .
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "number=${TAG#android-v}" >> "$GITHUB_OUTPUT"
 
-      - name: Set up JDK
+      # On workflow_dispatch github.ref_name is the branch, so check out the tag
+      # explicitly rather than whatever main happens to be.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -40,48 +57,117 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest --console=plain
+        run: ./gradlew testDebugUnitTest --no-daemon
 
-      # The version name and code both come from the tag, so the tag, the APK and
-      # the published release cannot disagree.
-      - name: Build
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: android/app/build/reports/tests/testDebugUnitTest/
+          retention-days: 14
+
+      # Stamps versionName/versionCode from the tag, so the APK identifies itself as
+      # exactly the version being released.
+      - name: Assemble release APK
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: ./gradlew :app:assembleRelease --console=plain
+          RELEASE_TAG: ${{ steps.version.outputs.number }}
+        run: ./gradlew assembleRelease --no-daemon
 
-      - name: Sign the APK
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+      # The app's main privacy claim is that it asks for almost nothing. Assert that,
+      # so a dependency cannot quietly introduce a permission in a release.
+      - name: Assert the permission set has not grown
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          "$build_tools/apksigner" sign \
+          set -euo pipefail
+          MANIFEST=app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+          [ -f "$MANIFEST" ] || { echo "::error::merged manifest not found at $MANIFEST"; exit 1; }
+
+          PERMS=$({ grep -o 'android:name="android.permission[^"]*"' "$MANIFEST" || true; } \
+                  | sed 's/.*permission\.//; s/"//' | sort -u)
+          EXPECTED=$(printf '%s\n' INTERNET USE_BIOMETRIC USE_FINGERPRINT | sort -u)
+
+          echo "Declared:"; echo "$PERMS"
+          if [ "$PERMS" != "$EXPECTED" ]; then
+            echo "::error::Permission set changed."
+            diff <(echo "$EXPECTED") <(echo "$PERMS") || true
+            exit 1
+          fi
+          echo "Permission set unchanged."
+
+      # Signing is optional so the workflow still works in a fork with no secrets:
+      # without a keystore it publishes an unsigned APK and labels it as such.
+      - name: Decode keystore
+        id: keystore
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "present=true" >> "$GITHUB_OUTPUT"
+
+      - name: Sign APK
+        if: steps.keystore.outputs.present == 'true'
+        env:
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          VERSION: ${{ steps.version.outputs.number }}
+        run: |
+          set -euo pipefail
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -r | head -1)
+          [ -n "$APKSIGNER" ] || { echo "::error::apksigner not found"; exit 1; }
+
+          "$APKSIGNER" sign \
             --ks "$RUNNER_TEMP/release.jks" \
-            --ks-key-alias "$ANDROID_KEY_ALIAS" \
-            --ks-pass "pass:$ANDROID_KEYSTORE_PASSWORD" \
-            --key-pass "pass:$ANDROID_KEY_PASSWORD" \
-            --out "app/build/outputs/apk/release/photo-cleaner-${GITHUB_REF_NAME#android-v}.apk" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out "photo-cleaner-nextcloud-${VERSION}.apk" \
             app/build/outputs/apk/release/app-release-unsigned.apk
-          "$build_tools/apksigner" verify --print-certs \
-            "app/build/outputs/apk/release/photo-cleaner-${GITHUB_REF_NAME#android-v}.apk"
+
+          "$APKSIGNER" verify --verbose "photo-cleaner-nextcloud-${VERSION}.apk"
           rm -f "$RUNNER_TEMP/release.jks"
 
-      - name: Label the build as unsigned
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 == '' }}
+      - name: Stage unsigned APK
+        if: steps.keystore.outputs.present != 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.number }}
         run: |
-          echo "::warning::No signing secrets — publishing an unsigned APK, which will not install without being signed first."
-          mv app/build/outputs/apk/release/app-release-unsigned.apk \
-             "app/build/outputs/apk/release/photo-cleaner-${GITHUB_REF_NAME#android-v}-UNSIGNED.apk"
+          echo "::warning::No signing secrets — publishing an unsigned APK, which Android will refuse to install."
+          cp app/build/outputs/apk/release/app-release-unsigned.apk \
+             "photo-cleaner-nextcloud-${VERSION}-unsigned.apk"
 
-      - name: Checksum
-        run: |
-          cd app/build/outputs/apk/release
-          sha256sum photo-cleaner-*.apk > SHA256SUMS.txt
-          cat SHA256SUMS.txt
+      - name: Checksums
+        run: sha256sum photo-cleaner-nextcloud-*.apk | tee SHA256SUMS.txt
 
-      - name: Publish
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          # Required for workflow_dispatch, where the run is not tag-triggered.
+          tag_name: ${{ steps.version.outputs.tag }}
           files: |
-            android/app/build/outputs/apk/release/photo-cleaner-*.apk
-            android/app/build/outputs/apk/release/SHA256SUMS.txt
+            android/photo-cleaner-nextcloud-*.apk
+            android/SHA256SUMS.txt
           generate_release_notes: true
+          body: |
+            ## Install
+
+            Download the APK below and open it on your phone. Android will ask you to
+            allow installs from this source, and Play Protect will warn that it has not
+            seen this developer before — both are expected for a sideloaded app.
+
+            Verify the download against `SHA256SUMS.txt` before installing.
+
+            ## You need the server app too
+
+            This is only the phone client. Your Nextcloud needs the **Photo Cleaner**
+            app installed and enabled, from the
+            [app store](https://apps.nextcloud.com/apps/photocleaner) or a server
+            release here. The phone signs in through your own Nextcloud's login page
+            and stores a revocable app password — never your real one.
+
+            ## Permissions
+
+            `INTERNET`, and the two biometric permissions for the optional app lock.
+            Nothing else: no storage, no accounts, no location. CI fails the build if
+            that set ever grows.
+
+            Minimum Android 8.0 (API 26).

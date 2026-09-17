@@ -6,12 +6,19 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault())
-private val dayFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
+/*
+ * Built per call rather than held in a field. `Locale.getDefault()` is read once when
+ * a field is initialised, so a formatter cached here would keep rendering month names
+ * in whatever language the app started in, even after the user changes the system
+ * language and comes back.
+ */
+private fun monthFormatter() = DateTimeFormatter.ofPattern("LLLL yyyy", Locale.getDefault())
+
+private fun dayFormatter() = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())
 
 /** "2024-07" as a month a person would read. */
 fun monthLabel(yearMonth: String): String = try {
-    YearMonth.parse(yearMonth).format(monthFormatter)
+    YearMonth.parse(yearMonth).format(monthFormatter())
 } catch (e: Exception) {
     yearMonth
 }
@@ -20,7 +27,7 @@ fun dateLabel(epochSeconds: Long, zone: ZoneId = ZoneId.systemDefault()): String
     if (epochSeconds <= 0L) {
         ""
     } else {
-        Instant.ofEpochSecond(epochSeconds).atZone(zone).format(dayFormatter)
+        Instant.ofEpochSecond(epochSeconds).atZone(zone).format(dayFormatter())
     }
 
 fun sizeLabel(bytes: Long): String {

@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+#
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Exercises the app against a real Nextcloud server: installs it, indexes a library,
+# walks every endpoint, deletes and restores files in both modes, and insists the
+# server's log stays clean throughout.
+#
+# The two worst bugs this app has had — a keep verdict that could never be saved, and
+# a restored photo that never came back to the index — both passed the unit tests and
+# static analysis. Only this catches them.
+#
+#   Usage: tests/integration/acceptance.sh [nextcloud-version] [port]
+#
+# Set DOCKER=sudo\ docker where the daemon needs it.
+
+set -uo pipefail
+
+VERSION="${1:-31}"
+PORT="${2:-8080}"
+CT="photocleaner-accept-$VERSION"
+DOCKER="${DOCKER:-docker}"
+ADMIN_PASS="acceptance-pass-123"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+B="http://localhost:$PORT/ocs/v2.php/apps/photocleaner/api/v1"
+A=(-u "admin:$ADMIN_PASS" -H OCS-APIRequest:true -H Accept:application/json -H Content-Type:application/json -s)
+
+PASS=0
+FAIL=0
+ok()   { PASS=$((PASS + 1)); printf "  \033[32mPASS\033[0m %s\n" "$1"; }
+bad()  { FAIL=$((FAIL + 1)); printf "  \033[31mFAIL\033[0m %s\n" "$1"; }
+step() { printf "\n\033[1m%s\033[0m\n" "$1"; }
+check() { [ "$2" = "$3" ] && ok "$1 ($3)" || bad "$1 — expected [$3], got [$2]"; }
+
+occ()  { $DOCKER exec -u www-data "$CT" php occ "$@" 2>&1; }
+data() { python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['ocs']['data']))"; }
+meta() { python3 -c "import json,sys; print(json.load(sys.stdin)['ocs']['meta']['statuscode'])"; }
+sql()  { $DOCKER exec "$CT" php -r "\$d=new PDO('sqlite:/var/www/html/data/nextcloud.db'); echo \$d->query(\"$1\")->fetchColumn();"; }
+
+cleanup() { $DOCKER rm -f "$CT" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+
+step "0. Start a clean Nextcloud $VERSION"
+cleanup
+$DOCKER run -d --name "$CT" -p "$PORT:80" \
+  -e SQLITE_DATABASE=nextcloud \
+  -e NEXTCLOUD_ADMIN_USER=admin \
+  -e NEXTCLOUD_ADMIN_PASSWORD="$ADMIN_PASS" \
+  -e NEXTCLOUD_TRUSTED_DOMAINS=localhost \
+  "nextcloud:$VERSION-apache" >/dev/null || { echo "could not start the container"; exit 1; }
+
+printf "  waiting for the installer"
+for _ in $(seq 1 120); do
+  if curl -s -m 5 "http://localhost:$PORT/status.php" 2>/dev/null | grep -q '"installed":true'; then break; fi
+  printf "."
+  sleep 5
+done
+echo
+SERVER=$(curl -s "http://localhost:$PORT/status.php" | python3 -c "import json,sys; print(json.load(sys.stdin)['versionstring'])" 2>/dev/null)
+[ -n "$SERVER" ] && ok "Nextcloud $SERVER is up" || { bad "the server never came up"; exit 1; }
+
+step "1. Install the app"
+$DOCKER exec "$CT" rm -rf /var/www/html/custom_apps/photocleaner
+$DOCKER cp "$ROOT/build/photocleaner" "$CT":/var/www/html/custom_apps/photocleaner >/dev/null
+$DOCKER exec "$CT" chown -R www-data:www-data /var/www/html/custom_apps/photocleaner
+OUT=$(occ app:enable photocleaner)
+echo "$OUT" | grep -q enabled && ok "app:enable" || bad "app:enable — $OUT"
+
+# Everything after this point must leave the log clean.
+$DOCKER exec "$CT" sh -c ': > /var/www/html/data/nextcloud.log'
+
+step "2. The migration created its tables"
+TBLS=$(sql "SELECT group_concat(name, ' ') FROM (SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'oc_photocleaner%' ORDER BY name)")
+check "tables" "$TBLS" "oc_photocleaner_decisions oc_photocleaner_media oc_photocleaner_scans"
+
+step "3. Put a test library in place"
+FIXTURES=$(mktemp -d)
+python3 "$ROOT/tests/integration/fixtures.py" "$FIXTURES" >/dev/null
+$DOCKER exec -u www-data "$CT" mkdir -p /var/www/html/data/admin/files/Photos
+for f in "$FIXTURES"/*; do
+  $DOCKER cp "$f" "$CT:/var/www/html/data/admin/files/Photos/$(basename "$f")" >/dev/null
+done
+rm -rf "$FIXTURES"
+$DOCKER exec "$CT" chown -R www-data:www-data /var/www/html/data/admin/files/Photos
+occ files:scan admin >/dev/null && ok "files:scan"
+
+step "4. Index the library"
+OUT=$(occ photocleaner:index admin --until-complete)
+echo "$OUT" | grep -q "index complete" && ok "occ photocleaner:index" || bad "index — $OUT"
+
+step "5. Each date came from the strategy it should have"
+dated() {
+  GOT=$(sql "SELECT year_month||' '||date_source FROM oc_photocleaner_media WHERE name='$1'")
+  check "$1" "$GOT" "$2"
+}
+NOW_MONTH=$(date +%Y-%m)
+dated "IMG_20240712_140325.jpg"        "2024-07 filename"
+dated "PXL_20230815_143022123.jpg"     "2023-08 filename"
+dated "Screenshot_20240103-091500.jpg" "2024-01 filename"
+dated "2022-05-19-08-30-00.jpg"        "2022-05 filename"
+dated "Vineyard.jpg"                   "2018-05 exif"
+dated "holiday photo.jpg"              "$NOW_MONTH mtime"
+# The traps. PHP turns 20241312 into January 2025 unless it is stopped, and an
+# eight-digit serial parses just as happily — either would invent a phantom month.
+dated "20241312.jpg"                   "$NOW_MONTH mtime"
+dated "84021599.jpg"                   "$NOW_MONTH mtime"
+
+step "6. Read endpoints"
+curl "${A[@]}" "$B/index" | grep -qE '"complete": *true' && ok "GET /index reports a complete scan" || bad "GET /index"
+MN=$(curl "${A[@]}" "$B/months" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['ocs']['data']['months']))")
+[ "$MN" -ge 8 ] && ok "GET /months returned $MN months" || bad "GET /months returned only $MN"
+FID=$(curl "${A[@]}" "$B/months/2024-07" | python3 -c "import json,sys; print(json.load(sys.stdin)['ocs']['data']['items'][0]['fileId'])")
+[ -n "$FID" ] && ok "GET /months/2024-07 -> fileId $FID" || bad "GET /months/2024-07"
+
+step "7. Verdicts"
+KEEPID=$(curl "${A[@]}" "$B/months/2018-05" | python3 -c "import json,sys; print(json.load(sys.stdin)['ocs']['data']['items'][0]['fileId'])")
+# A keep is the case that used to insert a null verdict and be rejected, while a
+# delete inserted cleanly — so half the app looked fine.
+curl "${A[@]}" -X POST "$B/decisions" -d "{\"fileId\":$KEEPID,\"verdict\":\"keep\"}" | grep -qE '"verdict": *"keep"' \
+  && ok "record a keep" || bad "record a keep"
+curl "${A[@]}" -X POST "$B/decisions" -d "{\"fileId\":$FID,\"verdict\":\"delete\"}" | grep -qE '"verdict": *"delete"' \
+  && ok "record a delete" || bad "record a delete"
+
+read -r B1 B2 <<<"$(curl "${A[@]}" "$B/months/2012-06" | python3 -c "
+import json,sys
+print(' '.join(str(i['fileId']) for i in json.load(sys.stdin)['ocs']['data']['items'][:2]))")"
+curl "${A[@]}" -X POST "$B/decisions" \
+  -d "{\"verdicts\":[{\"fileId\":$B1,\"verdict\":\"keep\"},{\"fileId\":$B2,\"verdict\":\"delete\"}]}" \
+  | grep -qE '"recorded": *2' && ok "batch record (the phone's offline queue)" || bad "batch record"
+
+P=$(curl "${A[@]}" "$B/decisions/pending" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['ocs']['data']['decisions']))")
+check "pending deletes" "$P" "2"
+
+step "8. Undo a pending verdict"
+curl "${A[@]}" -X DELETE "$B/decisions/$B2" >/dev/null
+P=$(curl "${A[@]}" "$B/decisions/pending" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['ocs']['data']['decisions']))")
+check "pending after undo" "$P" "1"
+
+step "9. Trash mode: apply, then restore"
+curl "${A[@]}" -X POST "$B/apply" -d '{}' | grep -qE '"succeeded": *1' && ok "apply moved one file" || bad "apply"
+$DOCKER exec "$CT" ls /var/www/html/data/admin/files/Photos/ | grep -q IMG_20240712 \
+  && bad "the file is still in the library" || ok "the file left the library"
+$DOCKER exec "$CT" ls /var/www/html/data/admin/files_trashbin/files/ 2>/dev/null | grep -q IMG_20240712 \
+  && ok "the file is in the trash" || bad "the file is not in the trash"
+curl "${A[@]}" -X POST "$B/restore" -d "{\"fileIds\":[$FID]}" | grep -qE '"restored": *1' \
+  && ok "restore reported success" || bad "restore"
+$DOCKER exec "$CT" ls /var/www/html/data/admin/files/Photos/ | grep -q IMG_20240712 \
+  && ok "the file is back in the library" || bad "the file did not come back"
+# It has to be reviewable again, not merely present on disk.
+BACK=$(curl "${A[@]}" "$B/months/2024-07" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['ocs']['data']['items']))")
+check "the restored photo is back in its month" "$BACK" "1"
+
+step "10. Folder mode: apply, then restore"
+curl "${A[@]}" -X PUT "$B/config" -d '{"mode":"folder","targetFolder":"/To Be Deleted"}' | grep -qE '"mode": *"folder"' \
+  && ok "switched to folder mode" || bad "config update"
+curl "${A[@]}" -X POST "$B/decisions" -d "{\"fileId\":$FID,\"verdict\":\"delete\"}" >/dev/null
+curl "${A[@]}" -X POST "$B/apply" -d '{}' | grep -qE '"succeeded": *1' && ok "apply moved one file" || bad "apply (folder)"
+$DOCKER exec "$CT" ls "/var/www/html/data/admin/files/To Be Deleted/" 2>/dev/null | grep -q IMG_20240712 \
+  && ok "the file is in the collection folder" || bad "the file is not in the collection folder"
+curl "${A[@]}" -X POST "$B/restore" -d "{\"fileIds\":[$FID]}" | grep -qE '"restored": *1' \
+  && ok "restore from the folder" || bad "restore (folder)"
+$DOCKER exec "$CT" ls /var/www/html/data/admin/files/Photos/ | grep -q IMG_20240712 \
+  && ok "the file is back where it was" || bad "the file did not come back"
+
+step "11. The collection folder stays out of the index"
+curl "${A[@]}" -X POST "$B/decisions" -d "{\"fileId\":$FID,\"verdict\":\"delete\"}" >/dev/null
+curl "${A[@]}" -X POST "$B/apply" -d '{}' >/dev/null
+occ photocleaner:index admin --full --until-complete >/dev/null
+IN=$(sql "SELECT COUNT(*) FROM oc_photocleaner_media WHERE path LIKE '/To Be Deleted%'")
+check "indexed rows under the collection folder" "$IN" "0"
+
+step "12. Bad input is refused"
+check "GET /months/2024-13"        "$(curl "${A[@]}" "$B/months/2024-13" | meta)" "400"
+check "record an unknown fileId"   "$(curl "${A[@]}" -X POST "$B/decisions" -d '{"fileId":999999,"verdict":"delete"}' | meta)" "404"
+check "record an invalid verdict"  "$(curl "${A[@]}" -X POST "$B/decisions" -d "{\"fileId\":$FID,\"verdict\":\"maybe\"}" | meta)" "400"
+check "set an invalid mode"        "$(curl "${A[@]}" -X PUT "$B/config" -d '{"mode":"nonsense"}' | meta)" "400"
+check "unauthenticated request"    "$(curl -s -o /dev/null -w '%{http_code}' -H OCS-APIRequest:true "$B/months")" "401"
+
+step "13. The background job runs"
+JOB=$(sql "SELECT id FROM oc_jobs WHERE class LIKE '%PhotoCleaner%'")
+if [ -n "$JOB" ]; then
+  OUT=$(occ background-job:execute "$JOB" --force-execute)
+  echo "$OUT" | grep -qiE "error|exception|fatal" && bad "background job — $OUT" || ok "background job executed"
+else
+  bad "the background job was never registered"
+fi
+
+step "14. The server's log is clean"
+ERRS=$($DOCKER exec "$CT" cat /var/www/html/data/nextcloud.log 2>/dev/null | python3 -c "
+import sys, json
+count = 0
+for line in sys.stdin:
+    line = line.strip()
+    if not line.startswith('{'):
+        continue
+    try:
+        entry = json.loads(line)
+    except ValueError:
+        continue
+    # 2 = warning, 3 = error, 4 = fatal. Anything at or above is a failure.
+    if entry.get('level', 0) >= 2:
+        count += 1
+        print('   ', entry.get('level'), entry.get('app'), '|', str(entry.get('message'))[:140], file=sys.stderr)
+print(count)
+")
+check "warnings and errors in the log" "$ERRS" "0"
+
+printf "\n\033[1m==== Nextcloud %s: %d passed, %d failed ====\033[0m\n" "$SERVER" "$PASS" "$FAIL"
+exit $((FAIL > 0 ? 1 : 0))

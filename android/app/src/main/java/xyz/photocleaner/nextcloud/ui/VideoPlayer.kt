@@ -5,6 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.annotation.OptIn
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
@@ -21,6 +22,9 @@ import xyz.photocleaner.nextcloud.Graph
  * downloaded to the device first and no separate share link is created just to watch
  * three seconds of a clip before deciding to delete it.
  */
+// media3's data-source and player-view APIs are marked unstable, and lint only
+// accepts androidx.annotation.OptIn for that — Kotlin's own @OptIn does not silence
+// it. Opting in explicitly beats suppressing the check.
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayer(url: String, modifier: Modifier = Modifier) {

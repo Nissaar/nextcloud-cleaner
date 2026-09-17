@@ -7,10 +7,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# Cancel superseded runs on the same branch rather than queueing them.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -87,7 +89,55 @@ jobs:
       - name: Fetch the app store schema
         run: curl -sSfL https://apps.nextcloud.com/schema/apps/info.xsd -o /tmp/info.xsd
 
-      # A malformed info.xml is only discovered when the app store rejects the
-      # upload, which is the worst moment to find out.
+      # A malformed info.xml is otherwise only discovered when the app store rejects
+      # the upload, which is the worst moment to find out.
       - name: Validate info.xml
         run: xmllint --noout --schema /tmp/info.xsd appinfo/info.xml
+
+      - name: Check the version is consistent
+        run: |
+          set -euo pipefail
+          XML=$(sed -ne 's|^[[:space:]]*<version>\(.*\)</version>|\1|p' appinfo/info.xml)
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$XML" != "$PKG" ]; then
+            echo "::error::appinfo/info.xml says $XML but package.json says $PKG"
+            exit 1
+          fi
+          echo "Version $XML is consistent."
+
+  integration:
+    name: Nextcloud ${{ matrix.nextcloud }}
+    runs-on: ubuntu-latest
+    needs: [php, frontend]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both ends of the range info.xml declares support for. Anything in between
+        # that breaks will almost always break one of these too.
+        nextcloud: ['31', '34']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Assemble the app exactly as it ships
+        run: |
+          npm ci
+          npm run build
+          make package
+
+      # Unit tests and psalm passed on both of the worst bugs this app has had: a keep
+      # verdict that could never be saved, and a restored photo that never returned to
+      # the index. Only a real server catches that class of thing.
+      - name: Acceptance run
+        run: tests/integration/acceptance.sh ${{ matrix.nextcloud }} 8080
+
+      - name: Nextcloud log
+        if: failure()
+        run: docker logs "photocleaner-accept-${{ matrix.nextcloud }}" 2>&1 | tail -100 || true

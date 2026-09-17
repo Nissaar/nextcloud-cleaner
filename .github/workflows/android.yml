@@ -9,6 +9,7 @@ on:
     paths: ['android/**', '.github/workflows/android.yml']
   pull_request:
     paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -39,28 +40,61 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Unit tests
-        run: ./gradlew :app:testDebugUnitTest --console=plain
+        run: ./gradlew testDebugUnitTest --no-daemon
 
-      - name: Debug build
-        run: ./gradlew :app:assembleDebug --console=plain
+      # The outbox is what keeps verdicts safe across a lost connection, so its
+      # report is worth keeping even when a later step fails.
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: android/app/build/reports/tests/testDebugUnitTest/
+          retention-days: 14
 
-      # R8 catches what debug does not — missing keep rules for the serializers,
-      # and stripped classes that only fail at runtime.
-      - name: Release build
-        run: ./gradlew :app:assembleRelease --console=plain
+      - name: Android Lint
+        run: ./gradlew lintDebug --no-daemon
 
-      # The permission set is a promise the README makes. A dependency bump that
-      # quietly adds one should fail here rather than ship.
-      - name: Check the permission set has not grown
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: android/app/build/reports/lint-results-debug.html
+          retention-days: 14
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      # Release runs R8, which catches missing keep rules that debug never exercises —
+      # the serializers would be stripped without them. Do it on every change so it
+      # cannot surface for the first time at a release tag.
+      - name: Assemble release APK (unsigned)
+        run: ./gradlew assembleRelease --no-daemon
+
+      # The app's main privacy claim is that it asks for almost nothing. Assert that,
+      # so a dependency cannot quietly introduce a permission in a future release.
+      - name: Assert the permission set has not grown
         run: |
-          manifest=app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
-          actual=$(grep -o 'android:name="android.permission[^"]*"' "$manifest" \
-                   | sed 's/.*permission\.//; s/"//' | sort -u | tr '\n' ' ')
-          expected="INTERNET USE_BIOMETRIC USE_FINGERPRINT "
-          if [ "$actual" != "$expected" ]; then
-            echo "Permissions changed." >&2
-            echo "  expected: $expected" >&2
-            echo "  actual:   $actual" >&2
+          set -euo pipefail
+          MANIFEST=app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+          [ -f "$MANIFEST" ] || { echo "::error::merged manifest not found at $MANIFEST"; exit 1; }
+
+          PERMS=$({ grep -o 'android:name="android.permission[^"]*"' "$MANIFEST" || true; } \
+                  | sed 's/.*permission\.//; s/"//' | sort -u)
+          EXPECTED=$(printf '%s\n' INTERNET USE_BIOMETRIC USE_FINGERPRINT | sort -u)
+
+          echo "Declared:"; echo "$PERMS"
+          if [ "$PERMS" != "$EXPECTED" ]; then
+            echo "::error::Permission set changed."
+            diff <(echo "$EXPECTED") <(echo "$PERMS") || true
             exit 1
           fi
-          echo "Permissions unchanged: $actual"
+          echo "Permission set unchanged."
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

@@ -1,6 +1,6 @@
 package xyz.photocleaner.nextcloud.data
 
-import android.content.Context
+import android.app.Application
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -8,7 +8,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore by preferencesDataStore(name = "settings")
+private val Application.dataStore by preferencesDataStore(name = "settings")
 
 /**
  * Settings that belong to this device rather than to the account.
@@ -16,7 +16,13 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
  * Anything that changes what the server does — the delete mode, the collection folder
  * — lives on the server, so the phone and the web UI cannot disagree about it.
  */
-class Settings(private val context: Context) {
+class Settings(
+    /**
+     * The Application, not an Activity. [xyz.photocleaner.nextcloud.Graph] holds this
+     * for the life of the process, and anything shorter-lived would be leaked by it.
+     */
+    private val context: Application,
+) {
 
     private object Keys {
         val APP_LOCK = booleanPreferencesKey("app_lock")

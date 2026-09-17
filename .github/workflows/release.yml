@@ -1,38 +1,73 @@
 # SPDX-FileCopyrightText: 2026 Nissaar
 # SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Publishes the Nextcloud app: builds the frontend, assembles the package, signs its
+# contents with the app certificate, tars it, attaches it to the GitHub release and
+# registers the release with the Nextcloud app store.
 
 name: Release
 
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build (e.g. v1.0.0)'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Build, sign and publish
+    name: Build, sign and publish the app
     runs-on: ubuntu-latest
 
-    # Declared here rather than per step: a step's `if:` is evaluated before its own
-    # `env:` exists, so a step-level definition would make every guard below false.
+    # Hoisted to job level on purpose: the `secrets` context is not available in a
+    # step-level `if`, but `env` is. This is what makes optional signing work.
     env:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-      APP_CERTIFICATE: ${{ secrets.APP_CERTIFICATE }}
       APP_STORE_TOKEN: ${{ secrets.APP_STORE_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Resolve version
+        id: version
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "number=${TAG#v}" >> "$GITHUB_OUTPUT"
 
+      # On workflow_dispatch github.ref_name is the branch, so check out the tag
+      # explicitly rather than whatever main happens to be.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      # A tag that disagrees with info.xml ships a mislabelled release, and the app
+      # store records whatever the XML says. Fail here instead.
       - name: Check the tag matches info.xml
         run: |
-          tag="${GITHUB_REF_NAME#v}"
-          declared=$(sed -ne 's|^\s*<version>\(.*\)</version>|\1|p' appinfo/info.xml)
-          if [ "$tag" != "$declared" ]; then
-            echo "Tag $tag does not match <version>$declared</version> in appinfo/info.xml" >&2
+          set -euo pipefail
+          DECLARED=$(sed -ne 's|^[[:space:]]*<version>\(.*\)</version>|\1|p' appinfo/info.xml)
+          if [ "${{ steps.version.outputs.number }}" != "$DECLARED" ]; then
+            echo "::error::Tag ${{ steps.version.outputs.number }} does not match <version>$DECLARED</version> in appinfo/info.xml"
             exit 1
           fi
+          echo "Version $DECLARED matches the tag."
+
+      - name: Validate info.xml against the store schema
+        run: |
+          set -euo pipefail
+          curl -sSfL https://apps.nextcloud.com/schema/apps/info.xsd -o /tmp/info.xsd
+          xmllint --noout --schema /tmp/info.xsd appinfo/info.xml
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -40,69 +75,134 @@ jobs:
           node-version: 24
           cache: npm
 
+      # A release that fails its own tests should never reach the store.
+      - name: Test
+        run: |
+          composer install --prefer-dist --no-progress
+          composer run cs:check
+          composer run psalm
+          composer run test:unit
+
       - name: Build the frontend
         run: |
           npm ci
+          npm run lint
           npm run build
+          test -s js/photocleaner-main.js
 
       - name: Assemble the package
         run: make package
 
-      # Signing needs `occ`, which needs a Nextcloud install. The official image
-      # is the least surprising place to get one.
-      - name: Write the signing key
-        if: ${{ env.APP_PRIVATE_KEY != '' }}
+      # Signing is optional so the workflow still works in a fork with no secrets:
+      # without a certificate it publishes an unsigned tarball and labels it as such.
+      # The app store will refuse an unsigned one, which is the point.
+      - name: Write the signing material
+        id: signing
+        if: env.APP_PRIVATE_KEY != ''
+        env:
+          APP_CERTIFICATE: ${{ secrets.APP_CERTIFICATE }}
         run: |
-          mkdir -p "$HOME/.nextcloud/certificates"
-          printf '%s' "$APP_PRIVATE_KEY" > "$HOME/.nextcloud/certificates/photocleaner.key"
-          printf '%s' "$APP_CERTIFICATE" > "$HOME/.nextcloud/certificates/photocleaner.crt"
-          chmod 600 "$HOME/.nextcloud/certificates/photocleaner.key"
+          mkdir -p "$RUNNER_TEMP/certs"
+          printf '%s' "$APP_PRIVATE_KEY" > "$RUNNER_TEMP/certs/photocleaner.key"
+          printf '%s' "$APP_CERTIFICATE" > "$RUNNER_TEMP/certs/photocleaner.crt"
+          chmod 600 "$RUNNER_TEMP/certs/photocleaner.key"
+          echo "present=true" >> "$GITHUB_OUTPUT"
 
-      - name: Sign the package
-        if: ${{ env.APP_PRIVATE_KEY != '' }}
+      # `integrity:sign-app` writes appinfo/signature.json, which is what a server
+      # checks. It needs an `occ`, so it runs inside the official image.
+      - name: Sign the package contents
+        if: steps.signing.outputs.present == 'true'
         run: |
+          set -euo pipefail
           docker run --rm \
             -v "$PWD/build:/build" \
-            -v "$HOME/.nextcloud/certificates:/certs:ro" \
+            -v "$RUNNER_TEMP/certs:/certs:ro" \
             --entrypoint php \
             nextcloud:stable \
             /var/www/html/occ integrity:sign-app \
               --privateKey=/certs/photocleaner.key \
               --certificate=/certs/photocleaner.crt \
               --path=/build/photocleaner
+          test -s build/photocleaner/appinfo/signature.json
+          echo "Signed $(python3 -c "import json;print(len(json.load(open('build/photocleaner/appinfo/signature.json'))['hashes']))") files."
 
-      - name: Warn when the release is unsigned
-        if: ${{ env.APP_PRIVATE_KEY == '' }}
-        run: echo "::warning::No APP_PRIVATE_KEY secret — publishing an unsigned build. The app store will refuse it."
+      - name: Warn that the build is unsigned
+        if: steps.signing.outputs.present != 'true'
+        run: echo "::warning::No APP_PRIVATE_KEY secret — publishing an unsigned tarball. The Nextcloud app store will refuse it."
 
       - name: Make the tarball
         run: make tarball
 
-      - name: Sign the tarball for the app store API
-        if: ${{ env.APP_PRIVATE_KEY != '' }}
+      - name: Checksums
         run: |
-          openssl dgst -sha512 -sign "$HOME/.nextcloud/certificates/photocleaner.key" \
-            build/artifacts/photocleaner-*.tar.gz | openssl base64 -A > build/artifacts/signature.txt
+          cd build/artifacts
+          sha256sum photocleaner-*.tar.gz | tee -a SHA256SUMS.txt
 
-      - name: Attach everything to the GitHub release
+      # The store verifies this against the registered certificate before it will
+      # accept the download URL.
+      - name: Sign the tarball for the store API
+        if: steps.signing.outputs.present == 'true'
+        run: |
+          set -euo pipefail
+          openssl dgst -sha512 -sign "$RUNNER_TEMP/certs/photocleaner.key" \
+            build/artifacts/photocleaner-${{ steps.version.outputs.number }}.tar.gz \
+            | openssl base64 -A > "$RUNNER_TEMP/signature.txt"
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
+          # Required for workflow_dispatch, where the run is not tag-triggered.
+          tag_name: ${{ steps.version.outputs.tag }}
           files: |
-            build/artifacts/*.tar.gz
-            build/artifacts/*.sha512
+            build/artifacts/photocleaner-*.tar.gz
+            build/artifacts/SHA256SUMS.txt
           generate_release_notes: true
+          body: |
+            ## Install
 
-      # The app store pulls the tarball from the release it was just attached to,
-      # so this has to come after the upload.
-      - name: Publish to the Nextcloud app store
-        if: ${{ env.APP_STORE_TOKEN != '' && env.APP_PRIVATE_KEY != '' }}
+            Most people should install from the
+            [Nextcloud app store](https://apps.nextcloud.com/apps/photocleaner):
+            **Apps → Multimedia → Photo Cleaner → Download and enable**.
+
+            To install this tarball by hand, unpack it into your server's apps
+            directory — the folder must be named `photocleaner` — and enable it:
+
+            ```bash
+            tar -xzf photocleaner-*.tar.gz -C /path/to/nextcloud/custom_apps/
+            sudo -u www-data php occ app:enable photocleaner
+            sudo -u www-data php occ photocleaner:index <user> --until-complete
+            ```
+
+            Verify the download against `SHA256SUMS.txt` first.
+
+            ## Before you delete anything
+
+            Deletions are real. In trash mode they go to your Nextcloud trash and stay
+            recoverable for as long as your server's retention policy allows — which an
+            admin can set to something short, and which does not exist at all if
+            `files_trashbin` is disabled. The app tells you which case you are in, but
+            a backup is the actual safety net.
+
+            Requires Nextcloud 31–34 and PHP 8.1+.
+
+      # The store pulls the tarball from the release it was just attached to, so this
+      # has to come last.
+      - name: Register the release with the app store
+        if: steps.signing.outputs.present == 'true' && env.APP_STORE_TOKEN != ''
         run: |
-          tarball=$(basename build/artifacts/photocleaner-*.tar.gz)
-          download="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${tarball}"
+          set -euo pipefail
+          TARBALL="photocleaner-${{ steps.version.outputs.number }}.tar.gz"
+          DOWNLOAD="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ steps.version.outputs.tag }}/${TARBALL}"
+
           curl -sSf -X POST https://apps.nextcloud.com/api/v1/apps/releases \
             -H "Authorization: Token ${APP_STORE_TOKEN}" \
             -H 'Content-Type: application/json' \
             -d "$(jq -n \
-                  --arg download "$download" \
-                  --arg signature "$(cat build/artifacts/signature.txt)" \
+                  --arg download "$DOWNLOAD" \
+                  --arg signature "$(cat "$RUNNER_TEMP/signature.txt")" \
                   '{download: $download, signature: $signature, nightly: false}')"
+          echo "Published $DOWNLOAD to the app store."
+
+      - name: Say what was skipped
+        if: steps.signing.outputs.present != 'true' || env.APP_STORE_TOKEN == ''
+        run: echo "::notice::Not published to the app store — see docs/PUBLISHING.md for the certificate and token setup."
