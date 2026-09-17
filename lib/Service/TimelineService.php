@@ -7,12 +7,12 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
-use OCA\PhotoCleaner\Db\DecisionMapper;
-use OCA\PhotoCleaner\Db\Media;
-use OCA\PhotoCleaner\Db\MediaMapper;
-use OCA\PhotoCleaner\Db\Verdict;
+use OCA\NextcloudCleaner\Db\DecisionMapper;
+use OCA\NextcloudCleaner\Db\Media;
+use OCA\NextcloudCleaner\Db\MediaMapper;
+use OCA\NextcloudCleaner\Db\Verdict;
 
 /**
  * The month grid and the deck for one month.

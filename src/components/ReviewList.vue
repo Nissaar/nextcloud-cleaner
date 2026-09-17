@@ -6,9 +6,9 @@
 <template>
 	<div class="pc-review">
 		<div class="pc-review__head">
-			<h2>{{ t('photocleaner', 'Marked for deletion') }}</h2>
+			<h2>{{ t('nextcloud_cleaner', 'Marked for deletion') }}</h2>
 			<p class="pc-review__sub">
-				{{ t('photocleaner', 'This is the only screen that changes your files. Take anything out that you want to keep, then confirm.') }}
+				{{ t('nextcloud_cleaner', 'This is the only screen that changes your files. Take anything out that you want to keep, then confirm.') }}
 			</p>
 		</div>
 
@@ -18,19 +18,19 @@
 
 		<template v-else>
 			<NcNoteCard v-if="mode === 'trash' && !trashAvailable" type="warning">
-				{{ t('photocleaner', 'The trash app is disabled on this server, so deleting is permanent and cannot be undone. Switch to collecting files in a folder in Settings if you would rather check them first.') }}
+				{{ t('nextcloud_cleaner', 'The trash app is disabled on this server, so deleting is permanent and cannot be undone. Switch to collecting files in a folder in Settings if you would rather check them first.') }}
 			</NcNoteCard>
 			<NcNoteCard v-else-if="mode === 'trash'" type="info">
-				{{ t('photocleaner', 'These files move to your Nextcloud trash, where they stay until your server’s retention policy clears them.') }}
+				{{ t('nextcloud_cleaner', 'These files move to your Nextcloud trash, where they stay until your server’s retention policy clears them.') }}
 			</NcNoteCard>
 			<NcNoteCard v-else type="info">
-				{{ t('photocleaner', 'These files are moved into your collection folder. Nothing is deleted — you delete them yourself in Files.') }}
+				{{ t('nextcloud_cleaner', 'These files are moved into your collection folder. Nothing is deleted — you delete them yourself in Files.') }}
 			</NcNoteCard>
 
 			<NcEmptyContent
 				v-if="!pending.length"
-				:name="t('photocleaner', 'Nothing marked for deletion')"
-				:description="t('photocleaner', 'Go through a month and anything you swipe away will be listed here first.')">
+				:name="t('nextcloud_cleaner', 'Nothing marked for deletion')"
+				:description="t('nextcloud_cleaner', 'Go through a month and anything you swipe away will be listed here first.')">
 				<template #icon>
 					<DeleteClock />
 				</template>
@@ -44,8 +44,8 @@
 							<Delete v-else :size="20" />
 						</template>
 						{{ applying
-							? t('photocleaner', 'Working…')
-							: n('photocleaner', 'Delete %n photo', 'Delete %n photos', pending.length) }}
+							? t('nextcloud_cleaner', 'Working…')
+							: n('nextcloud_cleaner', 'Delete %n photo', 'Delete %n photos', pending.length) }}
 					</NcButton>
 					<span class="pc-review__total">{{ totalSize }}</span>
 				</div>
@@ -57,7 +57,7 @@
 						<NcButton
 							class="pc-tile__pull"
 							variant="tertiary"
-							:aria-label="t('photocleaner', 'Keep this one after all')"
+							:aria-label="t('nextcloud_cleaner', 'Keep this one after all')"
 							@click="pullOut(item)">
 							<template #icon>
 								<Close :size="18" />
@@ -68,9 +68,9 @@
 			</template>
 
 			<section v-if="applied.length" class="pc-review__history">
-				<h3>{{ t('photocleaner', 'Already dealt with') }}</h3>
+				<h3>{{ t('nextcloud_cleaner', 'Already dealt with') }}</h3>
 				<p class="pc-review__sub">
-					{{ t('photocleaner', 'Bring any of these back if you change your mind.') }}
+					{{ t('nextcloud_cleaner', 'Bring any of these back if you change your mind.') }}
 				</p>
 
 				<ul class="pc-review__grid">
@@ -81,7 +81,7 @@
 						<NcButton
 							class="pc-tile__pull"
 							variant="tertiary"
-							:aria-label="t('photocleaner', 'Restore')"
+							:aria-label="t('nextcloud_cleaner', 'Restore')"
 							@click="restore(item)">
 							<template #icon>
 								<Restore :size="18" />
@@ -94,17 +94,17 @@
 
 		<NcDialog
 			v-if="confirming"
-			:name="n('photocleaner', 'Delete %n photo?', 'Delete %n photos?', pending.length)"
+			:name="n('nextcloud_cleaner', 'Delete %n photo?', 'Delete %n photos?', pending.length)"
 			:message="confirmMessage"
 			@closing="confirming = false">
 			<template #actions>
 				<NcButton variant="tertiary" @click="confirming = false">
-					{{ t('photocleaner', 'Cancel') }}
+					{{ t('nextcloud_cleaner', 'Cancel') }}
 				</NcButton>
 				<NcButton variant="error" @click="apply">
 					{{ mode === 'trash'
-						? t('photocleaner', 'Move to trash')
-						: t('photocleaner', 'Move to folder') }}
+						? t('nextcloud_cleaner', 'Move to trash')
+						: t('nextcloud_cleaner', 'Move to folder') }}
 				</NcButton>
 			</template>
 		</NcDialog>
@@ -175,10 +175,10 @@ export default {
 		confirmMessage() {
 			if (this.mode === 'trash') {
 				return this.trashAvailable
-					? t('photocleaner', 'They go to your Nextcloud trash and can be restored from here until your server clears them.')
-					: t('photocleaner', 'The trash is disabled on this server, so this cannot be undone.')
+					? t('nextcloud_cleaner', 'They go to your Nextcloud trash and can be restored from here until your server clears them.')
+					: t('nextcloud_cleaner', 'The trash is disabled on this server, so this cannot be undone.')
 			}
-			return t('photocleaner', 'They are moved into your collection folder. Nothing is deleted.')
+			return t('nextcloud_cleaner', 'They are moved into your collection folder. Nothing is deleted.')
 		},
 	},
 
@@ -199,7 +199,7 @@ export default {
 				this.pending = pending.decisions
 				this.applied = applied.decisions
 			} catch {
-				showError(t('photocleaner', 'Could not load your list'))
+				showError(t('nextcloud_cleaner', 'Could not load your list'))
 			} finally {
 				this.loading = false
 			}
@@ -215,7 +215,7 @@ export default {
 				this.pending = this.pending.filter((d) => d.fileId !== item.fileId)
 				this.$emit('changed')
 			} catch {
-				showError(t('photocleaner', 'Could not take that one out of the list'))
+				showError(t('nextcloud_cleaner', 'Could not take that one out of the list'))
 			}
 		},
 
@@ -227,17 +227,17 @@ export default {
 				if (result.error) {
 					showError(result.error)
 				} else if (result.failed > 0) {
-					showError(t('photocleaner', '{done} done, {failed} could not be changed', {
+					showError(t('nextcloud_cleaner', '{done} done, {failed} could not be changed', {
 						done: result.succeeded,
 						failed: result.failed,
 					}))
 				} else {
-					showSuccess(n('photocleaner', '%n photo dealt with', '%n photos dealt with', result.succeeded))
+					showSuccess(n('nextcloud_cleaner', '%n photo dealt with', '%n photos dealt with', result.succeeded))
 				}
 				await this.load()
 				this.$emit('changed')
 			} catch {
-				showError(t('photocleaner', 'Nothing was changed — the request failed'))
+				showError(t('nextcloud_cleaner', 'Nothing was changed — the request failed'))
 			} finally {
 				this.applying = false
 			}
@@ -247,14 +247,14 @@ export default {
 			try {
 				const result = await api.restore([item.fileId])
 				if (result.restored) {
-					showSuccess(t('photocleaner', 'Brought back'))
+					showSuccess(t('nextcloud_cleaner', 'Brought back'))
 				} else {
-					showError(result.failures[0]?.reason ?? t('photocleaner', 'Could not bring that back'))
+					showError(result.failures[0]?.reason ?? t('nextcloud_cleaner', 'Could not bring that back'))
 				}
 				await this.load()
 				this.$emit('changed')
 			} catch {
-				showError(t('photocleaner', 'Could not bring that back'))
+				showError(t('nextcloud_cleaner', 'Could not bring that back'))
 			}
 		},
 	},

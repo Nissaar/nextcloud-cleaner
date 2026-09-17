@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
 use OCP\App\IAppManager;
 use OCP\IUser;
@@ -76,7 +76,7 @@ class TrashService {
 		} catch (\Throwable $e) {
 			$this->logger->warning('Could not list the trash', [
 				'exception' => $e,
-				'app' => 'photocleaner',
+				'app' => 'nextcloud_cleaner',
 			]);
 			return [];
 		}
@@ -93,7 +93,7 @@ class TrashService {
 				$this->logger->warning('Could not restore a file from the trash', [
 					'exception' => $e,
 					'fileId' => $id,
-					'app' => 'photocleaner',
+					'app' => 'nextcloud_cleaner',
 				]);
 			}
 		}
@@ -108,7 +108,7 @@ class TrashService {
 		} catch (\Throwable $e) {
 			$this->logger->debug('Trash manager unavailable', [
 				'exception' => $e,
-				'app' => 'photocleaner',
+				'app' => 'nextcloud_cleaner',
 			]);
 			return null;
 		}

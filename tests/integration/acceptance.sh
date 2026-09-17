@@ -19,12 +19,12 @@ set -uo pipefail
 
 VERSION="${1:-31}"
 PORT="${2:-8080}"
-CT="photocleaner-accept-$VERSION"
+CT="nextcloud_cleaner-accept-$VERSION"
 DOCKER="${DOCKER:-docker}"
 ADMIN_PASS="acceptance-pass-123"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-B="http://localhost:$PORT/ocs/v2.php/apps/photocleaner/api/v1"
+B="http://localhost:$PORT/ocs/v2.php/apps/nextcloud_cleaner/api/v1"
 A=(-u "admin:$ADMIN_PASS" -H OCS-APIRequest:true -H Accept:application/json -H Content-Type:application/json -s)
 
 PASS=0
@@ -62,18 +62,18 @@ SERVER=$(curl -s "http://localhost:$PORT/status.php" | python3 -c "import json,s
 [ -n "$SERVER" ] && ok "Nextcloud $SERVER is up" || { bad "the server never came up"; exit 1; }
 
 step "1. Install the app"
-$DOCKER exec "$CT" rm -rf /var/www/html/custom_apps/photocleaner
-$DOCKER cp "$ROOT/build/photocleaner" "$CT":/var/www/html/custom_apps/photocleaner >/dev/null
-$DOCKER exec "$CT" chown -R www-data:www-data /var/www/html/custom_apps/photocleaner
-OUT=$(occ app:enable photocleaner)
+$DOCKER exec "$CT" rm -rf /var/www/html/custom_apps/nextcloud_cleaner
+$DOCKER cp "$ROOT/build/nextcloud_cleaner" "$CT":/var/www/html/custom_apps/nextcloud_cleaner >/dev/null
+$DOCKER exec "$CT" chown -R www-data:www-data /var/www/html/custom_apps/nextcloud_cleaner
+OUT=$(occ app:enable nextcloud_cleaner)
 echo "$OUT" | grep -q enabled && ok "app:enable" || bad "app:enable — $OUT"
 
 # Everything after this point must leave the log clean.
 $DOCKER exec "$CT" sh -c ': > /var/www/html/data/nextcloud.log'
 
 step "2. The migration created its tables"
-TBLS=$(sql "SELECT group_concat(name, ' ') FROM (SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'oc_photocleaner%' ORDER BY name)")
-check "tables" "$TBLS" "oc_photocleaner_decisions oc_photocleaner_media oc_photocleaner_scans"
+TBLS=$(sql "SELECT group_concat(name, ' ') FROM (SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'oc_nc_cleaner%' ORDER BY name)")
+check "tables" "$TBLS" "oc_nc_cleaner_decisions oc_nc_cleaner_media oc_nc_cleaner_scans"
 
 step "3. Put a test library in place"
 FIXTURES=$(mktemp -d)
@@ -87,12 +87,12 @@ $DOCKER exec "$CT" chown -R www-data:www-data /var/www/html/data/admin/files/Pho
 occ files:scan admin >/dev/null && ok "files:scan"
 
 step "4. Index the library"
-OUT=$(occ photocleaner:index admin --until-complete)
-echo "$OUT" | grep -q "index complete" && ok "occ photocleaner:index" || bad "index — $OUT"
+OUT=$(occ nextcloud_cleaner:index admin --until-complete)
+echo "$OUT" | grep -q "index complete" && ok "occ nextcloud_cleaner:index" || bad "index — $OUT"
 
 step "5. Each date came from the strategy it should have"
 dated() {
-  GOT=$(sql "SELECT year_month||' '||date_source FROM oc_photocleaner_media WHERE name='$1'")
+  GOT=$(sql "SELECT year_month||' '||date_source FROM oc_nc_cleaner_media WHERE name='$1'")
   check "$1" "$GOT" "$2"
 }
 NOW_MONTH=$(date +%Y-%m)
@@ -167,8 +167,8 @@ $DOCKER exec "$CT" ls /var/www/html/data/admin/files/Photos/ | grep -q IMG_20240
 step "11. The collection folder stays out of the index"
 curl "${A[@]}" -X POST "$B/decisions" -d "{\"fileId\":$FID,\"verdict\":\"delete\"}" >/dev/null
 curl "${A[@]}" -X POST "$B/apply" -d '{}' >/dev/null
-occ photocleaner:index admin --full --until-complete >/dev/null
-IN=$(sql "SELECT COUNT(*) FROM oc_photocleaner_media WHERE path LIKE '/To Be Deleted%'")
+occ nextcloud_cleaner:index admin --full --until-complete >/dev/null
+IN=$(sql "SELECT COUNT(*) FROM oc_nc_cleaner_media WHERE path LIKE '/To Be Deleted%'")
 check "indexed rows under the collection folder" "$IN" "0"
 
 step "12. Bad input is refused"
@@ -179,7 +179,7 @@ check "set an invalid mode"        "$(curl "${A[@]}" -X PUT "$B/config" -d '{"mo
 check "unauthenticated request"    "$(curl -s -o /dev/null -w '%{http_code}' -H OCS-APIRequest:true "$B/months")" "401"
 
 step "13. The background job runs"
-JOB=$(sql "SELECT id FROM oc_jobs WHERE class LIKE '%PhotoCleaner%'")
+JOB=$(sql "SELECT id FROM oc_jobs WHERE class LIKE '%NextcloudCleaner%'")
 if [ -n "$JOB" ]; then
   OUT=$(occ background-job:execute "$JOB" --force-execute)
   echo "$OUT" | grep -qiE "error|exception|fatal" && bad "background job — $OUT" || ok "background job executed"

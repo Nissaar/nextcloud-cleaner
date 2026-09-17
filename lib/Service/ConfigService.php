@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
-use OCA\PhotoCleaner\AppInfo\Application;
+use OCA\NextcloudCleaner\AppInfo\Application;
 use OCP\IConfig;
 
 /**

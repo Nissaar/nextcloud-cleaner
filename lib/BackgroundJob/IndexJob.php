@@ -7,10 +7,10 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\BackgroundJob;
+namespace OCA\NextcloudCleaner\BackgroundJob;
 
-use OCA\PhotoCleaner\Db\ScanMapper;
-use OCA\PhotoCleaner\Service\IndexService;
+use OCA\NextcloudCleaner\Db\ScanMapper;
+use OCA\NextcloudCleaner\Service\IndexService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -56,7 +56,7 @@ class IndexJob extends TimedJob {
 				$this->logger->error('Photo Cleaner background index failed', [
 					'exception' => $e,
 					'userId' => $scan->getUserId(),
-					'app' => 'photocleaner',
+					'app' => 'nextcloud_cleaner',
 				]);
 			}
 		}

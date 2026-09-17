@@ -130,7 +130,7 @@ class PhotoCleanerApi(
     fun request(path: String): Request.Builder {
         val account = accountProvider() ?: throw NotSignedInException()
         return Request.Builder()
-            .url("${account.server}/ocs/v2.php/apps/photocleaner/api/v1/$path")
+            .url("${account.server}/ocs/v2.php/apps/nextcloud_cleaner/api/v1/$path")
             .header("Authorization", account.basicAuthHeader())
             .header("OCS-APIRequest", "true")
             .header("Accept", "application/json")

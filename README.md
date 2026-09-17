@@ -87,13 +87,13 @@ By hand:
 
 ```bash
 cd /path/to/nextcloud/apps
-git clone https://github.com/Nissaar/nextcloud-cleaner.git photocleaner
-cd photocleaner
+git clone https://github.com/Nissaar/nextcloud-cleaner.git nextcloud_cleaner
+cd nextcloud_cleaner
 npm ci && npm run build
-sudo -u www-data php ../../occ app:enable photocleaner
+sudo -u www-data php ../../occ app:enable nextcloud_cleaner
 ```
 
-The directory **must** be named `photocleaner` — Nextcloud resolves an app by its
+The directory **must** be named `nextcloud_cleaner` — Nextcloud resolves an app by its
 directory name, and the repository is named after the project rather than the app id.
 
 ### First index
@@ -103,7 +103,7 @@ library the first pass is better run from the command line, where there is no re
 timeout and you can watch it:
 
 ```bash
-sudo -u www-data php occ photocleaner:index alice --until-complete
+sudo -u www-data php occ nextcloud_cleaner:index alice --until-complete
 ```
 
 After that a background job keeps it current. Without a working cron the index only
@@ -119,19 +119,19 @@ write use exactly the same endpoints. Authenticate with an
 over Basic auth and send `OCS-APIRequest: true`.
 
 ```
-GET    /ocs/v2.php/apps/photocleaner/api/v1/index            index state + totals
-POST   /ocs/v2.php/apps/photocleaner/api/v1/index            advance the index one chunk
-GET    /ocs/v2.php/apps/photocleaner/api/v1/months           every month, with progress
-GET    /ocs/v2.php/apps/photocleaner/api/v1/months/2024-07   one month's photos
-DELETE /ocs/v2.php/apps/photocleaner/api/v1/months/2024-07   forget that month's verdicts
-GET    /ocs/v2.php/apps/photocleaner/api/v1/decisions/pending
-GET    /ocs/v2.php/apps/photocleaner/api/v1/decisions/applied
-POST   /ocs/v2.php/apps/photocleaner/api/v1/decisions        record one, or a batch
-DELETE /ocs/v2.php/apps/photocleaner/api/v1/decisions/{id}   undo a pending verdict
-POST   /ocs/v2.php/apps/photocleaner/api/v1/apply            carry out every pending delete
-POST   /ocs/v2.php/apps/photocleaner/api/v1/restore          bring applied items back
-GET    /ocs/v2.php/apps/photocleaner/api/v1/config
-PUT    /ocs/v2.php/apps/photocleaner/api/v1/config
+GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/index            index state + totals
+POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/index            advance the index one chunk
+GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/months           every month, with progress
+GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/months/2024-07   one month's photos
+DELETE /ocs/v2.php/apps/nextcloud_cleaner/api/v1/months/2024-07   forget that month's verdicts
+GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions/pending
+GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions/applied
+POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions        record one, or a batch
+DELETE /ocs/v2.php/apps/nextcloud_cleaner/api/v1/decisions/{id}   undo a pending verdict
+POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/apply            carry out every pending delete
+POST   /ocs/v2.php/apps/nextcloud_cleaner/api/v1/restore          bring applied items back
+GET    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/config
+PUT    /ocs/v2.php/apps/nextcloud_cleaner/api/v1/config
 ```
 
 `POST /decisions` accepts either `{fileId, verdict}` or `{verdicts: [{fileId, verdict}, …]}`.
@@ -184,7 +184,7 @@ Requires PHP 8.1+ and Node 20+.
 make dev-setup          # composer install && npm ci
 make build              # compile the frontend into js/
 make test               # coding standard, psalm, phpunit, eslint
-make package            # assemble build/photocleaner/
+make package            # assemble build/nextcloud_cleaner/
 make appstore           # ... and sign and tar it
 ```
 

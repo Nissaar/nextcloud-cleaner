@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Command;
+namespace OCA\NextcloudCleaner\Command;
 
-use OCA\PhotoCleaner\Service\IndexService;
+use OCA\NextcloudCleaner\Service\IndexService;
 use OCP\IUserManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -18,7 +18,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * `occ photocleaner:index <user>` — build or refresh a user's month index.
+ * `occ nextcloud_cleaner:index <user>` — build or refresh a user's month index.
  *
  * The web UI can start a scan too, but a first pass over a very large library is
  * better run here: there is no request timeout to fit inside and the progress is
@@ -35,7 +35,7 @@ class IndexCommand extends Command {
 
 	protected function configure(): void {
 		$this
-			->setName('photocleaner:index')
+			->setName('nextcloud_cleaner:index')
 			->setDescription('Build or refresh the Photo Cleaner month index for a user')
 			->addArgument('user', InputArgument::REQUIRED, 'The user whose library to index')
 			->addOption('full', null, InputOption::VALUE_NONE, 'Discard the existing index and read everything again')

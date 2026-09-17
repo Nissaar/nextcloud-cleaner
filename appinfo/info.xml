@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-	<id>photocleaner</id>
+	<id>nextcloud_cleaner</id>
 	<name>Photo Cleaner</name>
 	<summary>Go through your photo library one photo at a time, month by month, keeping or deleting each one.</summary>
 	<description><![CDATA[
@@ -30,7 +30,7 @@ review from your phone.
 	<version>1.0.0</version>
 	<licence>agpl</licence>
 	<author mail="mushir.gopee@aqr8.fr">Nissaar</author>
-	<namespace>PhotoCleaner</namespace>
+	<namespace>NextcloudCleaner</namespace>
 	<category>multimedia</category>
 	<category>files</category>
 	<website>https://github.com/Nissaar/nextcloud-cleaner</website>
@@ -41,16 +41,16 @@ review from your phone.
 		<nextcloud min-version="31" max-version="34"/>
 	</dependencies>
 	<background-jobs>
-		<job>OCA\PhotoCleaner\BackgroundJob\IndexJob</job>
+		<job>OCA\NextcloudCleaner\BackgroundJob\IndexJob</job>
 	</background-jobs>
 	<commands>
-		<command>OCA\PhotoCleaner\Command\IndexCommand</command>
+		<command>OCA\NextcloudCleaner\Command\IndexCommand</command>
 	</commands>
 	<navigations>
 		<navigation>
-			<id>photocleaner</id>
+			<id>nextcloud_cleaner</id>
 			<name>Photo Cleaner</name>
-			<route>photocleaner.page.index</route>
+			<route>nextcloud_cleaner.page.index</route>
 			<icon>app.svg</icon>
 			<order>15</order>
 		</navigation>

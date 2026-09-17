@@ -4,11 +4,11 @@
   -->
 
 <template>
-	<NcContent appName="photocleaner">
+	<NcContent appName="nextcloud_cleaner">
 		<NcAppNavigation>
 			<template #list>
 				<NcAppNavigationItem
-					:name="t('photocleaner', 'Months')"
+					:name="t('nextcloud_cleaner', 'Months')"
 					:active="view === 'months'"
 					@click="go('months')">
 					<template #icon>
@@ -22,7 +22,7 @@
 				</NcAppNavigationItem>
 
 				<NcAppNavigationItem
-					:name="t('photocleaner', 'Marked for deletion')"
+					:name="t('nextcloud_cleaner', 'Marked for deletion')"
 					:active="view === 'review'"
 					@click="go('review')">
 					<template #icon>
@@ -36,7 +36,7 @@
 				</NcAppNavigationItem>
 
 				<NcAppNavigationItem
-					:name="t('photocleaner', 'Settings')"
+					:name="t('nextcloud_cleaner', 'Settings')"
 					:active="view === 'settings'"
 					@click="go('settings')">
 					<template #icon>
@@ -149,14 +149,14 @@ export default {
 			scan: { complete: false, running: false, found: 0, error: null },
 			// Sent down with the page, so the first render already knows which delete
 			// mode is set rather than flickering through a default.
-			config: loadState('photocleaner', 'config', {
+			config: loadState('nextcloud_cleaner', 'config', {
 				mode: 'trash',
 				targetFolder: '/To Be Deleted',
 				sourceFolder: '/',
 				skipDecided: true,
 			}),
 
-			trashAvailable: loadState('photocleaner', 'trashAvailable', true),
+			trashAvailable: loadState('nextcloud_cleaner', 'trashAvailable', true),
 			autoScanning: false,
 		}
 	},
@@ -199,7 +199,7 @@ export default {
 				this.summary = timeline.summary
 				this.months = timeline.months
 			} catch {
-				showError(t('photocleaner', 'Could not load your library'))
+				showError(t('nextcloud_cleaner', 'Could not load your library'))
 			}
 		},
 
@@ -241,7 +241,7 @@ export default {
 					guard++
 				} while (!this.scan.complete && guard < 500)
 			} catch {
-				showError(t('photocleaner', 'The scan could not finish'))
+				showError(t('nextcloud_cleaner', 'The scan could not finish'))
 			} finally {
 				this.autoScanning = false
 			}
@@ -256,7 +256,7 @@ export default {
 				await api.resetMonth(month)
 				await this.refreshAll()
 			} catch {
-				showError(t('photocleaner', 'Could not reopen that month'))
+				showError(t('nextcloud_cleaner', 'Could not reopen that month'))
 			}
 		},
 
@@ -267,7 +267,7 @@ export default {
 				// The server rejects a few settings by hand — an empty target folder,
 				// for one — and its reason is more use than a generic failure.
 				showError(error?.response?.data?.ocs?.meta?.message
-					?? t('photocleaner', 'Could not save that setting'))
+					?? t('nextcloud_cleaner', 'Could not save that setting'))
 			}
 		},
 	},

@@ -21,7 +21,7 @@ import androidx.security.crypto.MasterKey
 class AccountStore(context: Context) {
 
     private companion object {
-        const val FILE = "photocleaner-account"
+        const val FILE = "nextcloud_cleaner-account"
         const val KEY_SERVER = "server"
         const val KEY_LOGIN = "login_name"
         const val KEY_PASSWORD = "app_password"

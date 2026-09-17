@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Db;
+namespace OCA\NextcloudCleaner\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
@@ -17,7 +17,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<Scan>
  */
 class ScanMapper extends QBMapper {
-	public const TABLE = 'photocleaner_scans';
+	public const TABLE = 'nc_cleaner_scans';
 
 	public function __construct(IDBConnection $db) {
 		parent::__construct($db, self::TABLE, Scan::class);

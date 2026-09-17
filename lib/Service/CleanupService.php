@@ -7,12 +7,12 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
-use OCA\PhotoCleaner\Db\Decision;
-use OCA\PhotoCleaner\Db\DecisionMapper;
-use OCA\PhotoCleaner\Db\MediaMapper;
-use OCA\PhotoCleaner\Db\Verdict;
+use OCA\NextcloudCleaner\Db\Decision;
+use OCA\NextcloudCleaner\Db\DecisionMapper;
+use OCA\NextcloudCleaner\Db\MediaMapper;
+use OCA\NextcloudCleaner\Db\Verdict;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -102,7 +102,7 @@ class CleanupService {
 				$this->logger->warning('Could not apply a verdict', [
 					'exception' => $e,
 					'fileId' => $decision->getFileId(),
-					'app' => 'photocleaner',
+					'app' => 'nextcloud_cleaner',
 				]);
 				$failures[$decision->getFileId()] = $e->getMessage();
 			} finally {
@@ -194,7 +194,7 @@ class CleanupService {
 				// A stale index is corrected by the next scan.
 				$this->logger->warning('Restored files could not be re-indexed', [
 					'exception' => $e,
-					'app' => 'photocleaner',
+					'app' => 'nextcloud_cleaner',
 				]);
 			}
 		}

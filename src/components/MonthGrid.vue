@@ -6,7 +6,7 @@
 <template>
 	<div class="pc-months">
 		<div class="pc-months__head">
-			<h2>{{ t('photocleaner', 'Pick a month') }}</h2>
+			<h2>{{ t('nextcloud_cleaner', 'Pick a month') }}</h2>
 			<p class="pc-months__sub">
 				{{ subtitle }}
 			</p>
@@ -42,8 +42,8 @@
 					<span class="pc-month__name">{{ label(month.month) }}</span>
 					<span class="pc-month__count">
 						{{ month.done
-							? t('photocleaner', 'All {total} reviewed', { total: month.total })
-							: t('photocleaner', '{remaining} of {total} left', { remaining: month.remaining, total: month.total }) }}
+							? t('nextcloud_cleaner', 'All {total} reviewed', { total: month.total })
+							: t('nextcloud_cleaner', '{remaining} of {total} left', { remaining: month.remaining, total: month.total }) }}
 					</span>
 					<span class="pc-month__bar">
 						<span class="pc-month__fill" :style="{ width: progress(month) }" />
@@ -52,7 +52,7 @@
 						v-if="month.reviewed > 0"
 						class="pc-month__reset"
 						variant="tertiary"
-						:aria-label="t('photocleaner', 'Review this month again')"
+						:aria-label="t('nextcloud_cleaner', 'Review this month again')"
 						@click.stop="$emit('reset', month.month)">
 						<template #icon>
 							<Restore :size="18" />
@@ -108,9 +108,9 @@ export default {
 	computed: {
 		filters() {
 			return [
-				{ id: 'todo', label: t('photocleaner', 'To review') },
-				{ id: 'done', label: t('photocleaner', 'Done') },
-				{ id: 'all', label: t('photocleaner', 'All') },
+				{ id: 'todo', label: t('nextcloud_cleaner', 'To review') },
+				{ id: 'done', label: t('nextcloud_cleaner', 'Done') },
+				{ id: 'all', label: t('nextcloud_cleaner', 'All') },
 			]
 		},
 
@@ -127,10 +127,10 @@ export default {
 		subtitle() {
 			if (!this.summary.indexed) {
 				return this.scanning
-					? t('photocleaner', 'Reading your library…')
-					: t('photocleaner', 'No photos indexed yet')
+					? t('nextcloud_cleaner', 'Reading your library…')
+					: t('nextcloud_cleaner', 'No photos indexed yet')
 			}
-			return t('photocleaner', '{left} photos still to go through, across {months} months', {
+			return t('nextcloud_cleaner', '{left} photos still to go through, across {months} months', {
 				left: this.summary.photosLeft,
 				months: this.summary.monthsToReview,
 			})
@@ -138,22 +138,22 @@ export default {
 
 		emptyTitle() {
 			if (this.scanning) {
-				return t('photocleaner', 'Still reading your library')
+				return t('nextcloud_cleaner', 'Still reading your library')
 			}
 			if (this.filter === 'todo' && this.months.length) {
-				return t('photocleaner', 'Every month is done')
+				return t('nextcloud_cleaner', 'Every month is done')
 			}
-			return t('photocleaner', 'Nothing here yet')
+			return t('nextcloud_cleaner', 'Nothing here yet')
 		},
 
 		emptyDescription() {
 			if (this.scanning) {
-				return t('photocleaner', 'Months appear as they are found.')
+				return t('nextcloud_cleaner', 'Months appear as they are found.')
 			}
 			if (this.filter === 'todo' && this.months.length) {
-				return t('photocleaner', 'Switch to All to go back over one.')
+				return t('nextcloud_cleaner', 'Switch to All to go back over one.')
 			}
-			return t('photocleaner', 'Once your photos have been indexed, the months they were taken in show up here.')
+			return t('nextcloud_cleaner', 'Once your photos have been indexed, the months they were taken in show up here.')
 		},
 	},
 

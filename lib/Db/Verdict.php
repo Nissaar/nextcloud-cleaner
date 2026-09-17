@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Db;
+namespace OCA\NextcloudCleaner\Db;
 
 final class Verdict {
 	public const KEEP = 'keep';

@@ -7,11 +7,11 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Listener;
+namespace OCA\NextcloudCleaner\Listener;
 
-use OCA\PhotoCleaner\Db\MediaMapper;
-use OCA\PhotoCleaner\Db\ScanMapper;
-use OCA\PhotoCleaner\Service\MediaFinder;
+use OCA\NextcloudCleaner\Db\MediaMapper;
+use OCA\NextcloudCleaner\Db\ScanMapper;
+use OCA\NextcloudCleaner\Service\MediaFinder;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\NodeDeletedEvent;
@@ -66,7 +66,7 @@ class FileEventListener implements IEventListener {
 			// deletion because of it is not.
 			$this->logger->debug('Could not update the index for a deleted file', [
 				'exception' => $e,
-				'app' => 'photocleaner',
+				'app' => 'nextcloud_cleaner',
 			]);
 		}
 	}

@@ -7,12 +7,12 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
-use OCA\PhotoCleaner\Db\Media;
-use OCA\PhotoCleaner\Db\MediaMapper;
-use OCA\PhotoCleaner\Db\Scan;
-use OCA\PhotoCleaner\Db\ScanMapper;
+use OCA\NextcloudCleaner\Db\Media;
+use OCA\NextcloudCleaner\Db\MediaMapper;
+use OCA\NextcloudCleaner\Db\Scan;
+use OCA\NextcloudCleaner\Db\ScanMapper;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -125,7 +125,7 @@ class IndexService {
 			$this->logger->error('Photo Cleaner index scan failed', [
 				'exception' => $e,
 				'userId' => $userId,
-				'app' => 'photocleaner',
+				'app' => 'nextcloud_cleaner',
 			]);
 			$scan->setError(mb_substr($e->getMessage(), 0, 250));
 		} finally {
@@ -190,7 +190,7 @@ class IndexService {
 		if ($removed > 0) {
 			$this->logger->info('Removed stale entries after a full index pass', [
 				'removed' => $removed,
-				'app' => 'photocleaner',
+				'app' => 'nextcloud_cleaner',
 			]);
 		}
 		$scan->setComplete(true);
@@ -250,7 +250,7 @@ class IndexService {
 				// is still worth indexing.
 				$this->logger->debug('Skipped a file while indexing', [
 					'exception' => $e,
-					'app' => 'photocleaner',
+					'app' => 'nextcloud_cleaner',
 				]);
 			}
 		}
@@ -275,7 +275,7 @@ class IndexService {
 		}
 		$this->logger->warning('Configured source folder is missing, indexing everything instead', [
 			'path' => $sourcePath,
-			'app' => 'photocleaner',
+			'app' => 'nextcloud_cleaner',
 		]);
 		return $userFolder;
 	}

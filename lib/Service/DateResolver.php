@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
-use OCA\PhotoCleaner\Db\DateSource;
+use OCA\NextcloudCleaner\Db\DateSource;
 use OCP\Files\File;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\FilesMetadata\Model\IFilesMetadata;
@@ -98,7 +98,7 @@ class DateResolver {
 		} catch (\Throwable $e) {
 			$this->logger->debug('Could not preload file metadata', [
 				'exception' => $e,
-				'app' => 'photocleaner',
+				'app' => 'nextcloud_cleaner',
 			]);
 			return [];
 		}

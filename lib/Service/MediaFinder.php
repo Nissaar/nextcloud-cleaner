@@ -7,7 +7,7 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Service;
+namespace OCA\NextcloudCleaner\Service;
 
 use OC\Files\Search\SearchBinaryOperator;
 use OC\Files\Search\SearchComparison;
@@ -71,7 +71,7 @@ class MediaFinder {
 			} catch (\Throwable $e) {
 				$this->logger->warning('Paged media search failed, falling back to searchByMime', [
 					'exception' => $e,
-					'app' => 'photocleaner',
+					'app' => 'nextcloud_cleaner',
 				]);
 			}
 		}

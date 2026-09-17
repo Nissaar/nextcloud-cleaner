@@ -10,25 +10,25 @@
 				<template #icon>
 					<ArrowLeft :size="20" />
 				</template>
-				{{ t('photocleaner', 'Months') }}
+				{{ t('nextcloud_cleaner', 'Months') }}
 			</NcButton>
 
 			<div class="pc-deck__title">
 				<strong>{{ label(month) }}</strong>
 				<span v-if="items.length" class="pc-deck__progress">
-					{{ t('photocleaner', '{done} of {total}', { done: Math.min(index + 1, items.length), total: items.length }) }}
+					{{ t('nextcloud_cleaner', '{done} of {total}', { done: Math.min(index + 1, items.length), total: items.length }) }}
 				</span>
 			</div>
 
 			<NcButton
 				variant="tertiary"
 				:disabled="!history.length"
-				:aria-label="t('photocleaner', 'Undo')"
+				:aria-label="t('nextcloud_cleaner', 'Undo')"
 				@click="undo">
 				<template #icon>
 					<UndoVariant :size="20" />
 				</template>
-				{{ t('photocleaner', 'Undo') }}
+				{{ t('nextcloud_cleaner', 'Undo') }}
 			</NcButton>
 		</div>
 
@@ -40,28 +40,28 @@
 
 		<NcEmptyContent
 			v-else-if="!items.length"
-			:name="t('photocleaner', 'Nothing left in this month')"
-			:description="t('photocleaner', 'Every photo here already has a verdict.')">
+			:name="t('nextcloud_cleaner', 'Nothing left in this month')"
+			:description="t('nextcloud_cleaner', 'Every photo here already has a verdict.')">
 			<template #icon>
 				<CheckAll />
 			</template>
 			<template #action>
 				<NcButton @click="reviewAgain">
-					{{ t('photocleaner', 'Review this month again') }}
+					{{ t('nextcloud_cleaner', 'Review this month again') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
 
 		<NcEmptyContent
 			v-else-if="finished"
-			:name="t('photocleaner', 'Month finished')"
+			:name="t('nextcloud_cleaner', 'Month finished')"
 			:description="summaryText">
 			<template #icon>
 				<CheckAll />
 			</template>
 			<template #action>
 				<NcButton variant="primary" @click="$emit('back')">
-					{{ t('photocleaner', 'Back to months') }}
+					{{ t('nextcloud_cleaner', 'Back to months') }}
 				</NcButton>
 			</template>
 		</NcEmptyContent>
@@ -98,11 +98,11 @@
 
 				<button v-if="current.isVideo && !playing" class="pc-card__play" @click="playing = true">
 					<Play :size="48" />
-					<span class="hidden-visually">{{ t('photocleaner', 'Play video') }}</span>
+					<span class="hidden-visually">{{ t('nextcloud_cleaner', 'Play video') }}</span>
 				</button>
 
 				<span v-if="verdictHint" class="pc-card__stamp" :class="`pc-card__stamp--${verdictHint}`">
-					{{ verdictHint === 'delete' ? t('photocleaner', 'Delete') : t('photocleaner', 'Keep') }}
+					{{ verdictHint === 'delete' ? t('nextcloud_cleaner', 'Delete') : t('nextcloud_cleaner', 'Keep') }}
 				</span>
 
 				<div class="pc-card__meta">
@@ -123,18 +123,18 @@
 				<template #icon>
 					<Delete :size="20" />
 				</template>
-				{{ t('photocleaner', 'Delete') }}
+				{{ t('nextcloud_cleaner', 'Delete') }}
 			</NcButton>
 			<NcButton variant="success" wide @click="decide('keep')">
 				<template #icon>
 					<Check :size="20" />
 				</template>
-				{{ t('photocleaner', 'Keep') }}
+				{{ t('nextcloud_cleaner', 'Keep') }}
 			</NcButton>
 		</div>
 
 		<p v-if="!loading && items.length && !finished" class="pc-deck__hint">
-			{{ t('photocleaner', 'Drag the photo, use the buttons, or press the left and right arrow keys. Nothing is deleted until you confirm it on the Marked for deletion screen.') }}
+			{{ t('nextcloud_cleaner', 'Drag the photo, use the buttons, or press the left and right arrow keys. Nothing is deleted until you confirm it on the Marked for deletion screen.') }}
 		</p>
 	</div>
 </template>
@@ -244,7 +244,7 @@ export default {
 		},
 
 		summaryText() {
-			return t('photocleaner', 'Kept {kept}, marked {deleted} for deletion.', {
+			return t('nextcloud_cleaner', 'Kept {kept}, marked {deleted} for deletion.', {
 				kept: this.kept,
 				deleted: this.deleted,
 			})
@@ -278,7 +278,7 @@ export default {
 				this.kept = 0
 				this.deleted = 0
 			} catch {
-				showError(t('photocleaner', 'Could not open that month'))
+				showError(t('nextcloud_cleaner', 'Could not open that month'))
 			} finally {
 				this.loading = false
 			}
@@ -335,7 +335,7 @@ export default {
 				await api.record(item.fileId, verdict)
 				this.$emit('changed')
 			} catch {
-				showError(t('photocleaner', 'Could not save that decision'))
+				showError(t('nextcloud_cleaner', 'Could not save that decision'))
 				this.stepBack()
 			}
 		},
@@ -350,7 +350,7 @@ export default {
 				await api.undo(last.item.fileId)
 				this.$emit('changed')
 			} catch {
-				showError(t('photocleaner', 'Could not undo that'))
+				showError(t('nextcloud_cleaner', 'Could not undo that'))
 			}
 		},
 

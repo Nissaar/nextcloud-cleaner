@@ -160,7 +160,7 @@ jobs:
 
             This is only the phone client. Your Nextcloud needs the **Photo Cleaner**
             app installed and enabled, from the
-            [app store](https://apps.nextcloud.com/apps/photocleaner) or a server
+            [app store](https://apps.nextcloud.com/apps/nextcloud_cleaner) or a server
             release here. The phone signs in through your own Nextcloud's login page
             and stores a revocable app password — never your real one.
 

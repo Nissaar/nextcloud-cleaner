@@ -7,9 +7,9 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\PhotoCleaner\Controller;
+namespace OCA\NextcloudCleaner\Controller;
 
-use OCA\PhotoCleaner\Service\CleanupService;
+use OCA\NextcloudCleaner\Service\CleanupService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCS\OCSBadRequestException;

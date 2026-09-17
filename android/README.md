@@ -93,7 +93,7 @@ Then add four repository secrets under **Settings → Secrets and variables → 
 
 | Secret | Value |
 |---|---|
-| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 nextcloud-photo-cleaner-release.jks` |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 nextcloud-nextcloud-cleaner-release.jks` |
 | `ANDROID_KEY_ALIAS` | the alias you chose |
 | `ANDROID_KEYSTORE_PASSWORD` | the password you chose |
 | `ANDROID_KEY_PASSWORD` | the same password (PKCS12 uses one for both) |

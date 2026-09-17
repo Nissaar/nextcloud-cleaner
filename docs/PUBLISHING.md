@@ -6,6 +6,20 @@ Getting an app into the store is a one-off setup (a certificate and a registered
 id) followed by a repeatable release (tag, and let CI do the rest). The setup half
 cannot be automated: it involves a pull request a human has to merge.
 
+## Names, and which of them matter
+
+Three names are in play and only one of them is permanent:
+
+| Name | Value | Changeable? |
+|---|---|---|
+| **App id** | `nextcloud_cleaner` | **No.** It is the certificate's `CN`, the app store registration, the directory the app must live in, and the URL of every OCS endpoint. Changing it means a new certificate and, to users, a different app. |
+| Display name | Photo Cleaner | Yes. `<name>` in `info.xml`, shown in the store and the app menu. |
+| Repository | `nextcloud-cleaner` | Yes. GitHub only; Nextcloud never sees it. |
+
+The app store's schema restricts an id to `[a-z]+[a-z0-9_]*[a-z0-9]+` — lowercase
+letters, digits and underscores, 32 characters at most. A hyphen is not allowed, which
+is why the id is not simply the repository name.
+
 ---
 
 ## 1. Generate the signing key
@@ -16,11 +30,11 @@ Nextcloud to revoke the old certificate and issue a new one, which takes another
 request and leaves every existing install unable to verify the app in the meantime.
 
 ```bash
-openssl req -nodes -newkey rsa:4096 -keyout photocleaner.key -out photocleaner.csr \
-        -subj "/CN=photocleaner"
+openssl req -nodes -newkey rsa:4096 -keyout nextcloud_cleaner.key -out nextcloud_cleaner.csr \
+        -subj "/CN=nextcloud_cleaner"
 ```
 
-The `CN` **must** be exactly the app id, `photocleaner`. The store checks this.
+The `CN` **must** be exactly the app id, `nextcloud_cleaner`. The store checks this.
 
 ### Back it up before doing anything else
 
@@ -35,9 +49,9 @@ The `CN` **must** be exactly the app id, `photocleaner`. The store checks this.
 
 Open a pull request against
 [nextcloud/app-certificate-requests](https://github.com/nextcloud/app-certificate-requests)
-adding `photocleaner/photocleaner.csr`, with a link to this repository in the
+adding `nextcloud_cleaner/nextcloud_cleaner.csr`, with a link to this repository in the
 description. A Nextcloud maintainer reviews it and commits the signed
-`photocleaner.crt` back to that repository.
+`nextcloud_cleaner.crt` back to that repository.
 
 This takes days rather than minutes. Start it before you plan to release.
 
@@ -45,16 +59,16 @@ Once merged:
 
 ```bash
 mkdir -p ~/.nextcloud/certificates
-mv photocleaner.key ~/.nextcloud/certificates/
-curl -sSfL https://raw.githubusercontent.com/nextcloud/app-certificate-requests/master/photocleaner/photocleaner.crt \
-     -o ~/.nextcloud/certificates/photocleaner.crt
-chmod 600 ~/.nextcloud/certificates/photocleaner.key
+mv nextcloud_cleaner.key ~/.nextcloud/certificates/
+curl -sSfL https://raw.githubusercontent.com/nextcloud/app-certificate-requests/master/nextcloud_cleaner/nextcloud_cleaner.crt \
+     -o ~/.nextcloud/certificates/nextcloud_cleaner.crt
+chmod 600 ~/.nextcloud/certificates/nextcloud_cleaner.key
 ```
 
 ## 3. Register the app id
 
 Sign in at [apps.nextcloud.com](https://apps.nextcloud.com) with a Nextcloud account,
-then register `photocleaner` under **Developer → Register app**. The id has to match
+then register `nextcloud_cleaner` under **Developer → Register app**. The id has to match
 the certificate's `CN` and `appinfo/info.xml`'s `<id>`.
 
 Take an API token from your account settings — the release workflow uses it.
@@ -65,8 +79,8 @@ Under **Settings → Secrets and variables → Actions**:
 
 | Secret | Value |
 |---|---|
-| `APP_PRIVATE_KEY` | contents of `photocleaner.key` |
-| `APP_CERTIFICATE` | contents of `photocleaner.crt` |
+| `APP_PRIVATE_KEY` | contents of `nextcloud_cleaner.key` |
+| `APP_CERTIFICATE` | contents of `nextcloud_cleaner.crt` |
 | `APP_STORE_TOKEN` | your app store API token |
 
 Without them the release workflow still runs, and publishes an **unsigned** tarball
@@ -90,8 +104,8 @@ release, and posts the download URL and a detached signature to the app store AP
 
 ```bash
 make appstore NEXTCLOUD_ROOT=/path/to/nextcloud
-openssl dgst -sha512 -sign ~/.nextcloud/certificates/photocleaner.key \
-        build/artifacts/photocleaner-1.0.1.tar.gz | openssl base64 -A
+openssl dgst -sha512 -sign ~/.nextcloud/certificates/nextcloud_cleaner.key \
+        build/artifacts/nextcloud_cleaner-1.0.1.tar.gz | openssl base64 -A
 ```
 
 Then upload the tarball somewhere permanent and POST it:
@@ -100,7 +114,7 @@ Then upload the tarball somewhere permanent and POST it:
 curl -X POST https://apps.nextcloud.com/api/v1/apps/releases \
      -H "Authorization: Token $APP_STORE_TOKEN" \
      -H 'Content-Type: application/json' \
-     -d '{"download": "https://…/photocleaner-1.0.1.tar.gz", "signature": "…", "nightly": false}'
+     -d '{"download": "https://…/nextcloud_cleaner-1.0.1.tar.gz", "signature": "…", "nightly": false}'
 ```
 
 ---
@@ -111,7 +125,7 @@ curl -X POST https://apps.nextcloud.com/api/v1/apps/releases \
   [its schema](https://apps.nextcloud.com/schema/apps/info.xsd). CI validates this on
   every push, because otherwise you discover a malformed `info.xml` at the moment you
   are trying to publish.
-- The tarball contains exactly one top-level directory, named `photocleaner`.
+- The tarball contains exactly one top-level directory, named `nextcloud_cleaner`.
 - The detached signature verifies against the registered certificate.
 - `<nextcloud min-version>`/`<max-version>` decide which servers are offered the app.
   **Raise `max-version` when a new Nextcloud comes out**, or the app quietly disappears

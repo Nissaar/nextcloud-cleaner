@@ -77,7 +77,7 @@ jobs:
         run: npm run build
 
       - name: Fail if the build produced nothing
-        run: test -s js/photocleaner-main.js
+        run: test -s js/nextcloud_cleaner-main.js
 
   appinfo:
     name: App metadata
@@ -140,4 +140,4 @@ jobs:
 
       - name: Nextcloud log
         if: failure()
-        run: docker logs "photocleaner-accept-${{ matrix.nextcloud }}" 2>&1 | tail -100 || true
+        run: docker logs "nextcloud_cleaner-accept-${{ matrix.nextcloud }}" 2>&1 | tail -100 || true

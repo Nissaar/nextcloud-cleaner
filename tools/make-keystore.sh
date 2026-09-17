@@ -14,8 +14,8 @@
 
 set -euo pipefail
 
-OUT="${1:-nextcloud-photo-cleaner-release.jks}"
-ALIAS="${2:-nextcloudphotocleaner}"
+OUT="${1:-nextcloud-cleaner-release.jks}"
+ALIAS="${2:-nextcloudcleaner}"
 
 if [ -e "$OUT" ]; then
     echo "Refusing to overwrite the existing keystore at: $OUT" >&2
