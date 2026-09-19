@@ -70,8 +70,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Caching is switched off for this job alone. CodeQL extracts Kotlin by
+      # watching the compiler run, so a cache hit is indistinguishable from an empty
+      # project: the build goes green in twenty seconds, compileDebugKotlin reports
+      # FROM-CACHE, and the analysis then fails having seen no code at all.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
 
       # Kotlin has to be compiled to be extracted — unlike Java, it cannot be read
       # from source alone, which is what `build-mode: none` does. So this job builds
@@ -86,7 +92,7 @@ jobs:
 
       - name: Build the client
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --no-build-cache
 
       - name: Analyse
         uses: github/codeql-action/analyze@v3
