@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Scans this app the way somebody who did not write it would: for code patterns that
+# are exploitable, and for dependencies with known advisories.
+#
+# This deliberately does not duplicate CI. psalm already types the PHP, and the PHP is
+# where this app does its dangerous work — CodeQL has no PHP analyser, so the coverage
+# here is the frontend and the Android client.
+
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # An advisory published next month is about code that is already written, so the
+  # scan has to come back on its own rather than waiting for the next commit.
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: CodeQL ${{ matrix.language }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript', 'java-kotlin']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # `none` reads the source instead of compiling it. For java-kotlin that avoids
+      # standing up an Android SDK purely to satisfy the scanner, which is a lot of
+      # moving parts to keep working for a build CI already does properly.
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:${{ matrix.language }}
+
+  dependencies:
+    name: Dependency advisories
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Only the production tree fails the build. Everything in devDependencies is
+      # build tooling that never reaches a server, and letting a webpack plugin's
+      # advisory block a release would teach everyone to ignore this job.
+      - name: Audit what actually ships
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit the build tooling, for information
+        continue-on-error: true
+        run: npm audit --audit-level=moderate
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      # The app has no runtime composer dependencies, so this covers the dev tools.
+      # Reported rather than enforced, for the same reason as the npm tooling above.
+      - name: Audit composer packages, for information
+        continue-on-error: true
+        run: |
+          composer install --prefer-dist --no-progress
+          composer audit

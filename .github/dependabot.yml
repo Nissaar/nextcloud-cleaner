@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 Nissaar
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Grouped and monthly on purpose. An app maintained by one person drowns in a dozen
+# separate patch PRs a week and stops reading any of them, which is worse than
+# updating a little less often and actually looking.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      frontend:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      php-tooling:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      android:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  # Workflows pin actions by major tag, so these are the updates that quietly change
+  # what runs with repository secrets. Worth seeing separately from library bumps.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
