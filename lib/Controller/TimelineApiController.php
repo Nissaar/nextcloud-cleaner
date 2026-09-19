@@ -81,10 +81,11 @@ class TimelineApiController extends AuthenticatedOcsController {
 	#[NoCSRFRequired]
 	public function months(): DataResponse {
 		$userId = $this->userId();
+		$months = $this->timelineService->months($userId);
 
 		return new DataResponse([
-			'months' => $this->timelineService->months($userId),
-			'summary' => $this->timelineService->summary($userId),
+			'months' => $months,
+			'summary' => $this->timelineService->summary($userId, $months),
 		]);
 	}
 

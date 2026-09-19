@@ -70,7 +70,7 @@
 			<!-- The next photo sits behind the current one so a decision reveals it
 			     instantly rather than flashing an empty frame while it loads. -->
 			<div v-if="next" class="pc-card pc-card--behind">
-				<img :src="preview(next.fileId, 900)" :alt="next.name" loading="eager">
+				<img :src="preview(next.fileId, DECK_SIZE)" :alt="next.name" loading="eager">
 			</div>
 
 			<div
@@ -85,15 +85,17 @@
 					v-if="current.isVideo && playing"
 					class="pc-card__media"
 					:src="video(current.path)"
-					:poster="preview(current.fileId, 1200)"
+					:poster="preview(current.fileId, DECK_SIZE)"
 					controls
 					autoplay
 					playsinline />
 				<img
 					v-else
 					class="pc-card__media"
-					:src="preview(current.fileId, 1200)"
+					:src="preview(current.fileId, DECK_SIZE)"
 					:alt="current.name"
+					fetchpriority="high"
+					decoding="async"
 					draggable="false">
 
 				<button v-if="current.isVideo && !playing" class="pc-card__play" @click="playing = true">
@@ -158,6 +160,23 @@ import { dateLabel, dateSourceLabel, monthLabel, sizeLabel } from '../format.js'
 /** How far the card must travel before the drag counts as a verdict. */
 const COMMIT_DISTANCE = 120
 
+/**
+ * Every preview in the deck is requested at this one size, and that is the whole
+ * point: the browser caches by URL, so asking for the next photo at one size and
+ * then displaying it at another throws the prefetch away and pays a fresh round
+ * trip on every swipe.
+ *
+ * 1024 is also deliberate rather than round. Nextcloud snaps a requested preview up
+ * to the next power of four (64, 256, 1024, 4096) and the previewgenerator app
+ * pre-renders that same ladder, so 1024 is a size servers tend to already have. Ask
+ * for 1200 and you silently get the 4096 bucket — several megabytes, and a full
+ * decode of the original if nothing warmed it.
+ */
+const DECK_SIZE = 1024
+
+/** Photos to pull into the browser cache ahead of the one on screen. */
+const PREFETCH_AHEAD = 4
+
 export default {
 	name: 'SwipeDeck',
 
@@ -197,6 +216,7 @@ export default {
 			dragX: 0,
 			pointerId: null,
 			startX: 0,
+			DECK_SIZE,
 		}
 	},
 
@@ -251,6 +271,18 @@ export default {
 		},
 	},
 
+	watch: {
+		index: 'prefetchAhead',
+		items: 'prefetchAhead',
+	},
+
+	created() {
+		// Deliberately not in data(): these are kept only so the browser does not
+		// garbage-collect an in-flight decode, and making them reactive would have
+		// Vue walk an Image object on every swipe for nothing.
+		this.prefetched = new Map()
+	},
+
 	async mounted() {
 		await this.load()
 		window.addEventListener('keydown', this.onKey)
@@ -267,6 +299,40 @@ export default {
 		size: sizeLabel,
 		preview: previewUrl,
 		video: fileUrl,
+
+		/**
+		 * Warms the browser cache for the photos just over the horizon.
+		 *
+		 * The card behind the current one covers exactly one photo ahead, which is
+		 * enough for a considered swipe and not enough for a fast one. Decoding a few
+		 * more in advance is what makes a run of quick verdicts stay instant.
+		 */
+		prefetchAhead() {
+			for (let i = this.index + 1; i <= this.index + PREFETCH_AHEAD; i++) {
+				const item = this.items[i]
+				if (!item || this.prefetched.has(item.fileId)) {
+					continue
+				}
+				const img = new Image()
+				img.decoding = 'async'
+				img.src = this.preview(item.fileId, DECK_SIZE)
+				// decode() resolves once the pixels are ready, so the swap is a paint
+				// rather than a decode. It rejects if the image is replaced first,
+				// which is not worth reporting.
+				img.decode?.().catch(() => {})
+				this.prefetched.set(item.fileId, img)
+			}
+
+			// The deck only moves forwards, so anything already judged is dead weight.
+			for (const fileId of this.prefetched.keys()) {
+				const stillAhead = this.items
+					.slice(this.index, this.index + PREFETCH_AHEAD + 1)
+					.some((item) => item.fileId === fileId)
+				if (!stillAhead) {
+					this.prefetched.delete(fileId)
+				}
+			}
+		},
 
 		async load(skipDecided = null) {
 			this.loading = true

@@ -100,10 +100,15 @@ class TimelineService {
 	/**
 	 * Headline numbers for the top of the app.
 	 *
+	 * Takes the month list when the caller already has it. Every swipe refreshes this,
+	 * and recomputing the grouped-by-month aggregate a second time per request put
+	 * that query in competition with the preview the user is waiting to see.
+	 *
+	 * @param array<array{done: bool, remaining: int}>|null $months
 	 * @return array{indexed: int, months: int, monthsToReview: int, photosLeft: int, pendingDeletes: int, kept: int}
 	 */
-	public function summary(string $userId): array {
-		$months = $this->months($userId);
+	public function summary(string $userId, ?array $months = null): array {
+		$months ??= $this->months($userId);
 
 		return [
 			'indexed' => $this->mediaMapper->countForUser($userId),
