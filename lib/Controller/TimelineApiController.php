@@ -16,6 +16,7 @@ use OCA\PhotoSweep\Service\TrashService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\OCS\OCSBadRequestException;
 use OCP\IRequest;
@@ -62,7 +63,14 @@ class TimelineApiController extends AuthenticatedOcsController {
 	 * Bounded rather than run-to-completion because this is a web request: the client
 	 * calls it again while `complete` is false, which is what turns a five-minute
 	 * first scan into visible progress instead of a timeout.
+	 *
+	 * Rate limited because indexing 4,000 files is the most expensive thing an
+	 * ordinary user can ask this app to do, and the `running` flag is set and cleared
+	 * inside a single request, so parallel calls race straight past it. The ceiling
+	 * sits well above what a real first scan needs — the client calls this in a loop,
+	 * and each call takes seconds of real work — so it bites only on a runaway.
 	 */
+	#[UserRateLimit(limit: 60, period: 60)]
 	#[NoAdminRequired]
 	public function scan(bool $full = false): DataResponse {
 		$userId = $this->userId();

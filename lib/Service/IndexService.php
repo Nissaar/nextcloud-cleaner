@@ -222,6 +222,16 @@ class IndexService {
 					continue;
 				}
 
+				// Files shared with you and groupfolder mounts sit inside your folder
+				// but belong to someone else. Nextcloud would happily let you delete
+				// the ones you have write access to — and that delete removes the
+				// owner's only copy. Someone sweeping "2019" is tidying their own
+				// library, not agreeing to prune a colleague's.
+				$owner = $file->getOwner();
+				if ($owner === null || $owner->getUID() !== $userId) {
+					continue;
+				}
+
 				$resolved = $this->dateResolver->resolve($file, $timezone, $metadata);
 
 				$media = new Media();
