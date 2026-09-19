@@ -59,7 +59,7 @@ Other measures:
 
 ## Building
 
-Requires JDK 17+ and the Android SDK (compileSdk 35). Minimum Android 8.0 (API 26).
+Requires JDK 17+ and the Android SDK (compileSdk 36). Minimum Android 8.0 (API 26).
 
 ```bash
 cd android
