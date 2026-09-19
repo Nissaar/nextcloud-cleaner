@@ -86,6 +86,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Not on the runner image any more, and its absence fails the step with a
+      # bare 127 that looks nothing like a schema problem.
+      - name: Install xmllint
+        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
+
       - name: Fetch the app store schema
         run: curl -sSfL https://apps.nextcloud.com/schema/apps/info.xsd -o /tmp/info.xsd
 

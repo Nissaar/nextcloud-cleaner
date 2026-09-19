@@ -104,7 +104,7 @@ class TimelineService {
 	 * and recomputing the grouped-by-month aggregate a second time per request put
 	 * that query in competition with the preview the user is waiting to see.
 	 *
-	 * @param array<array{done: bool, remaining: int}>|null $months
+	 * @param list<array{month: string, total: int, reviewed: int, remaining: int, done: bool}>|null $months
 	 * @return array{indexed: int, months: int, monthsToReview: int, photosLeft: int, pendingDeletes: int, kept: int}
 	 */
 	public function summary(string $userId, ?array $months = null): array {

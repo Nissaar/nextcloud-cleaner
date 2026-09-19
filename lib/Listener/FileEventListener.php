@@ -66,6 +66,11 @@ class FileEventListener implements IEventListener {
 
 		// Typed against the public parent so getTarget() stays checkable, pinned to
 		// the trash event by name so no other AbstractNodesEvent slips through.
+		//
+		// Psalm cannot see that the trash event extends AbstractNodesEvent, because
+		// files_trashbin is not part of this app's analysis, so it reads the
+		// comparison as impossible. On a real server it is exactly what arrives.
+		/** @psalm-suppress TypeDoesNotContainType */
 		if ($event instanceof AbstractNodesEvent && $event::class === self::NODE_RESTORED_EVENT) {
 			$this->onRestored($event->getTarget());
 		}
