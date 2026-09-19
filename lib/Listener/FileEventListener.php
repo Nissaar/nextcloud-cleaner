@@ -9,11 +9,14 @@ declare(strict_types=1);
 
 namespace OCA\PhotoSweep\Listener;
 
+use OCA\PhotoSweep\Db\DecisionMapper;
 use OCA\PhotoSweep\Db\MediaMapper;
 use OCA\PhotoSweep\Db\ScanMapper;
+use OCA\PhotoSweep\Service\IndexService;
 use OCA\PhotoSweep\Service\MediaFinder;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\Files\Events\Node\AbstractNodesEvent;
 use OCP\Files\Events\Node\NodeDeletedEvent;
 use OCP\Files\File;
 use OCP\Files\Node;
@@ -31,33 +34,47 @@ use Psr\Log\LoggerInterface;
  * usually has no extracted EXIF yet, so indexing it this instant would date it from
  * its filename or mtime and quite possibly file it under the wrong month.
  *
- * @template-implements IEventListener<NodeDeletedEvent>
+ * A restore from the trash is the exception, because there the file is not new: it
+ * was in the index minutes ago and the app is the reason it left.
+ *
+ * @template-implements IEventListener<NodeDeletedEvent|AbstractNodesEvent>
  */
 class FileEventListener implements IEventListener {
 
+	/**
+	 * Named as a string because it belongs to files_trashbin, which an admin can
+	 * disable. Referring to the class directly would make this app's static analysis
+	 * depend on another app being installed, the same reason TrashService names
+	 * ITrashManager this way.
+	 */
+	public const NODE_RESTORED_EVENT = 'OCA\\Files_Trashbin\\Events\\NodeRestoredEvent';
+
 	public function __construct(
 		private MediaMapper $mediaMapper,
+		private DecisionMapper $decisionMapper,
 		private ScanMapper $scanMapper,
+		private IndexService $indexService,
 		private LoggerInterface $logger,
 	) {
 	}
 
 	public function handle(Event $event): void {
-		if (!$event instanceof NodeDeletedEvent) {
+		if ($event instanceof NodeDeletedEvent) {
+			$this->onDeleted($event->getNode());
 			return;
 		}
 
-		$node = $event->getNode();
-		if (!$node instanceof File) {
-			return;
+		// Typed against the public parent so getTarget() stays checkable, pinned to
+		// the trash event by name so no other AbstractNodesEvent slips through.
+		if ($event instanceof AbstractNodesEvent && $event::class === self::NODE_RESTORED_EVENT) {
+			$this->onRestored($event->getTarget());
 		}
+	}
 
+	private function onDeleted(Node $node): void {
 		try {
-			if (!MediaFinder::isMedia($node->getMimeType())) {
-				return;
-			}
-			$userId = $this->ownerOf($node);
-			if ($userId === null || $this->scanMapper->find($userId) === null) {
+			$userId = $this->userForMedia($node);
+			if ($userId === null) {
 				return;
 			}
 			$this->mediaMapper->removeByFileId($userId, $node->getId());
@@ -69,6 +86,49 @@ class FileEventListener implements IEventListener {
 				'app' => 'photosweep',
 			]);
 		}
+	}
+
+	/**
+	 * The photo is back, so the verdict that sent it away is no longer true.
+	 *
+	 * Dropping the decision row is what puts it back in its month: the deck hides
+	 * every file that has one, applied or not, so leaving the row would keep the
+	 * photo invisible even after the next scan re-indexed it.
+	 *
+	 * A trash restore keeps the file id, which is what lets the row be found at all.
+	 */
+	private function onRestored(Node $node): void {
+		try {
+			$userId = $this->userForMedia($node);
+			if ($userId === null) {
+				return;
+			}
+			$fileId = $node->getId();
+			$this->decisionMapper->removeByFileId($userId, $fileId);
+			$this->indexService->indexFiles($userId, [$fileId]);
+		} catch (\Throwable $e) {
+			// Same bargain as a delete: the restore itself must not fail because the
+			// app could not keep up. A stale row is corrected when the list is read.
+			$this->logger->debug('Could not update the index for a restored file', [
+				'exception' => $e,
+				'app' => 'photosweep',
+			]);
+		}
+	}
+
+	/**
+	 * The owner, but only when this is a media file belonging to someone who uses
+	 * the app. Everything else is none of our business.
+	 */
+	private function userForMedia(Node $node): ?string {
+		if (!$node instanceof File || !MediaFinder::isMedia($node->getMimeType())) {
+			return null;
+		}
+		$userId = $this->ownerOf($node);
+		if ($userId === null || $this->scanMapper->find($userId) === null) {
+			return null;
+		}
+		return $userId;
 	}
 
 	private function ownerOf(Node $node): ?string {

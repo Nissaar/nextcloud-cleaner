@@ -27,6 +27,14 @@ class Application extends App implements IBootstrap {
 		// A deleted photo must stop being offered for review straight away. New files
 		// are picked up by the background job instead, once their EXIF has been read.
 		$context->registerEventListener(NodeDeletedEvent::class, FileEventListener::class);
+
+		// Pulling a photo back out of the trash in Files is the user undoing what this
+		// app did, just somewhere else. Without this the photo is on disk again while
+		// the app still lists it as deleted, and no scan ever corrects it.
+		//
+		// The class name is only a string here, so naming an app that may be disabled
+		// costs nothing: the event is simply never dispatched.
+		$context->registerEventListener(FileEventListener::NODE_RESTORED_EVENT, FileEventListener::class);
 	}
 
 	public function boot(IBootContext $context): void {
