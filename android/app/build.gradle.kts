@@ -27,13 +27,13 @@ val appVersionCode: Int = run {
 }
 
 android {
-    namespace = "xyz.photosweep"
-    compileSdk = 35
+    namespace = "io.github.nissaar.photosweep"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "xyz.photosweep"
+        applicationId = "io.github.nissaar.photosweep"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
     }

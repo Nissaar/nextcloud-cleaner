@@ -105,7 +105,7 @@ so forks work without configuration.
 ## Layout
 
 ```
-app/src/main/java/xyz/photosweep/
+app/src/main/java/io/github/nissaar/photosweep/
 ├── api/          Login Flow v2, the OCS client, and the wire models
 ├── data/         account store, offline verdict queue, repository
 ├── ui/           Compose screens
