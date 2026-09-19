@@ -28,8 +28,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  codeql:
-    name: CodeQL ${{ matrix.language }}
+  codeql-frontend:
+    name: CodeQL javascript
     runs-on: ubuntu-latest
 
     permissions:
@@ -37,28 +37,61 @@ jobs:
       actions: read
       contents: read
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ['javascript-typescript', 'java-kotlin']
-
     steps:
       - uses: actions/checkout@v4
 
-      # `none` reads the source instead of compiling it. For java-kotlin that avoids
-      # standing up an Android SDK purely to satisfy the scanner, which is a lot of
-      # moving parts to keep working for a build CI already does properly.
       - name: Initialise CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript-typescript
           build-mode: none
           queries: security-extended
 
       - name: Analyse
         uses: github/codeql-action/analyze@v3
         with:
-          category: /language:${{ matrix.language }}
+          category: /language:javascript-typescript
+
+  codeql-android:
+    name: CodeQL kotlin
+    runs-on: ubuntu-latest
+
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Kotlin has to be compiled to be extracted — unlike Java, it cannot be read
+      # from source alone, which is what `build-mode: none` does. So this job builds
+      # the app properly, which is also why it is separate from the frontend scan
+      # rather than a second leg of one matrix.
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          build-mode: manual
+          queries: security-extended
+
+      - name: Build the client
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:java-kotlin
 
   dependencies:
     name: Dependency advisories
